@@ -122,7 +122,6 @@
         .item-reason { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
         .item-action { font-size: 12px; color: var(--accent-blue); font-weight: 600; margin-top: 12px; text-decoration: none; display: block;}
 
-        /* 弹窗使用原生 CSS 伪类，不依赖 JS 点击 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; }
         .modal-overlay:target { display: flex; }
         .modal { background: var(--bg-surface); border-radius: 12px; width: 560px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); border: 1px solid var(--border-color); position: relative; }
@@ -143,9 +142,14 @@
             .kpi-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
+    <!-- 引入 Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+    <div id="errorBanner" style="display:none; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:16px; margin-bottom:24px; border-radius:8px;">
+        <strong>⚠️ 数据库连接失败：</strong> <span id="errorMessage">请按 F12 查看控制台错误。</span>
+    </div>
 
     <div class="alert-strip" id="alertStrip">
         <div class="alert-text">
@@ -160,7 +164,6 @@
             <h1>猎头渠道效能与风险洞察</h1>
             <p>Talent Acquisition ROI & Risk Dashboard</p>
         </div>
-        <!-- 弹窗按钮改成纯 HTML 锚点 -->
         <a href="#addModal" class="btn-primary">录入最新数据 +</a>
     </div>
 
@@ -189,7 +192,7 @@
 
     <div class="main-layout" id="data-panel">
         <div class="data-panel">
-            <div class="panel-header">供应商明细看板 (点击行可编辑)</div>
+            <div class="panel-header">供应商明细看板 (点击名称编辑)</div>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -321,25 +324,39 @@
 
     <script>
         // ==========================================
-        // 1. Supabase 凭证
+        // 1. Supabase 凭证 (修改了变量名，防止重复声明)
         // ==========================================
         const SUPABASE_URL = 'https://dqqmfurqnvearnigikez.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_E4UqnalDjXJLBhDynDKmgg_72PhM1UR'; 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let dbClient;
+        try {
+            dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } catch(e) {
+            showError("无法初始化数据库，请检查凭证。");
+        }
 
         const tableBody = document.getElementById('tableBody');
         const riskList = document.getElementById('riskList');
         const alertStrip = document.getElementById('alertStrip');
         const alertMessage = document.getElementById('alertMessage');
 
+        function showError(msg) {
+            document.getElementById('errorBanner').style.display = 'block';
+            document.getElementById('errorMessage').innerText = msg;
+        }
+
         async function fetchData() {
-            const { data, error } = await supabase.from('hunter_suppliers').select('*').order('weighted_score', { ascending: false });
-            if (error) { 
-                console.error('数据库拉取失败：', error); 
-                tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--accent-red); padding: 40px;">拉取失败，详情按 F12 查看控制台。</td></tr>`;
-                return; 
+            if(!dbClient) return;
+            try {
+                const { data, error } = await dbClient.from('hunter_suppliers').select('*').order('weighted_score', { ascending: false });
+                if (error) throw error;
+                renderUI(data);
+            } catch (err) {
+                console.error(err);
+                showError(err.message || "拉取数据失败，请确认表名 hunter_suppliers 是否正确。");
+                tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--accent-red); padding: 40px;">读取失败，请看页面顶部提示。</td></tr>`;
             }
-            renderUI(data);
         }
 
         function renderUI(data) {
@@ -425,24 +442,29 @@
             }
         }
 
-        // 渲染编辑弹窗
         window.fillEditForm = async (id) => {
-            const { data, error } = await supabase.from('hunter_suppliers').select('*').eq('id', id).single();
-            if (error) return;
-            document.getElementById('editId').value = data.id;
-            document.getElementById('editName').value = data.name;
-            document.getElementById('editGrade').value = data.grade;
-            document.getElementById('editCost').value = data.total_cost;
-            document.getElementById('editHires').value = data.total_hires;
-            document.getElementById('editHighHires').value = data.high_level_hires;
-            document.getElementById('editScore').value = data.weighted_score;
-            document.getElementById('editRetention').value = data.retention_rate;
-            document.getElementById('editStatus').value = data.status;
+            if(!dbClient) return;
+            try {
+                const { data, error } = await dbClient.from('hunter_suppliers').select('*').eq('id', id).single();
+                if (error) throw error;
+                document.getElementById('editId').value = data.id;
+                document.getElementById('editName').value = data.name;
+                document.getElementById('editGrade').value = data.grade;
+                document.getElementById('editCost').value = data.total_cost;
+                document.getElementById('editHires').value = data.total_hires;
+                document.getElementById('editHighHires').value = data.high_level_hires;
+                document.getElementById('editScore').value = data.weighted_score;
+                document.getElementById('editRetention').value = data.retention_rate;
+                document.getElementById('editStatus').value = data.status;
+            } catch (err) {
+                console.error(err);
+                alert("获取详情失败，请重试。");
+            }
         };
 
-        // 提交新增
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if(!dbClient) return alert("数据库未连接");
             const payload = {
                 name: document.getElementById('addName').value,
                 grade: document.getElementById('addGrade').value,
@@ -453,14 +475,18 @@
                 retention_rate: parseFloat(document.getElementById('addRetention').value) || 0,
                 status: document.getElementById('addStatus').value
             };
-            await supabase.from('hunter_suppliers').insert([payload]);
-            window.location.hash = ''; // 关闭弹窗
-            fetchData();
+            const { error } = await dbClient.from('hunter_suppliers').insert([payload]);
+            if(error) {
+                alert("保存失败: " + error.message);
+            } else {
+                window.location.hash = ''; 
+                fetchData();
+            }
         });
 
-        // 提交编辑
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if(!dbClient) return alert("数据库未连接");
             const id = document.getElementById('editId').value;
             const payload = {
                 name: document.getElementById('editName').value,
@@ -472,19 +498,15 @@
                 retention_rate: parseFloat(document.getElementById('editRetention').value) || 0,
                 status: document.getElementById('editStatus').value
             };
-            await supabase.from('hunter_suppliers').update(payload).eq('id', id);
-            window.location.hash = ''; // 关闭弹窗
-            fetchData();
-        });
-
-        // 监听 hash 变化清理页面
-        window.addEventListener('hashchange', () => {
-            if(window.location.hash === '#addModal') {
-                document.getElementById('addForm').reset();
+            const { error } = await dbClient.from('hunter_suppliers').update(payload).eq('id', id);
+            if(error) {
+                alert("修改失败: " + error.message);
+            } else {
+                window.location.hash = ''; 
+                fetchData();
             }
         });
 
-        // 初始化
         fetchData();
     </script>
 </body>
