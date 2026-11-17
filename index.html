@@ -142,7 +142,7 @@
             .kpi-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
-    <!-- 引入 Supabase -->
+    <!-- 引入 Supabase 官方脚本 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -324,14 +324,14 @@
 
     <script>
         // ==========================================
-        // 1. Supabase 凭证 (修改了变量名，防止重复声明)
+        // 1. Supabase 凭证与初始化（改名 myDB 避免冲突）
         // ==========================================
         const SUPABASE_URL = 'https://dqqmfurqnvearnigikez.supabase.co'; 
         const SUPABASE_ANON_KEY = 'sb_publishable_E4UqnalDjXJLBhDynDKmgg_72PhM1UR'; 
         
-        let dbClient;
+        let myDB;
         try {
-            dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            myDB = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         } catch(e) {
             showError("无法初始化数据库，请检查凭证。");
         }
@@ -347,9 +347,9 @@
         }
 
         async function fetchData() {
-            if(!dbClient) return;
+            if(!myDB) return;
             try {
-                const { data, error } = await dbClient.from('hunter_suppliers').select('*').order('weighted_score', { ascending: false });
+                const { data, error } = await myDB.from('hunter_suppliers').select('*').order('weighted_score', { ascending: false });
                 if (error) throw error;
                 renderUI(data);
             } catch (err) {
@@ -443,9 +443,9 @@
         }
 
         window.fillEditForm = async (id) => {
-            if(!dbClient) return;
+            if(!myDB) return;
             try {
-                const { data, error } = await dbClient.from('hunter_suppliers').select('*').eq('id', id).single();
+                const { data, error } = await myDB.from('hunter_suppliers').select('*').eq('id', id).single();
                 if (error) throw error;
                 document.getElementById('editId').value = data.id;
                 document.getElementById('editName').value = data.name;
@@ -464,7 +464,7 @@
 
         document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!dbClient) return alert("数据库未连接");
+            if(!myDB) return alert("数据库未连接");
             const payload = {
                 name: document.getElementById('addName').value,
                 grade: document.getElementById('addGrade').value,
@@ -475,7 +475,7 @@
                 retention_rate: parseFloat(document.getElementById('addRetention').value) || 0,
                 status: document.getElementById('addStatus').value
             };
-            const { error } = await dbClient.from('hunter_suppliers').insert([payload]);
+            const { error } = await myDB.from('hunter_suppliers').insert([payload]);
             if(error) {
                 alert("保存失败: " + error.message);
             } else {
@@ -486,7 +486,7 @@
 
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(!dbClient) return alert("数据库未连接");
+            if(!myDB) return alert("数据库未连接");
             const id = document.getElementById('editId').value;
             const payload = {
                 name: document.getElementById('editName').value,
@@ -498,7 +498,7 @@
                 retention_rate: parseFloat(document.getElementById('editRetention').value) || 0,
                 status: document.getElementById('editStatus').value
             };
-            const { error } = await dbClient.from('hunter_suppliers').update(payload).eq('id', id);
+            const { error } = await myDB.from('hunter_suppliers').update(payload).eq('id', id);
             if(error) {
                 alert("修改失败: " + error.message);
             } else {
