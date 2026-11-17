@@ -8,14 +8,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
 
         :root {
-            /* 4A 级高定色彩 */
             --bg-body: #F7F8FA;
             --bg-surface: #FFFFFF;
             --text-primary: #1A1D20;
             --text-secondary: #6B7280;
             --text-tertiary: #9CA3AF;
-            
-            /* 状态色 - 低饱和莫兰迪 */
             --accent-blue: #3B5BDB;
             --accent-blue-bg: #EDF2FF;
             --accent-green: #0CA678;
@@ -24,7 +21,6 @@
             --accent-red-bg: #FFF5F5;
             --accent-orange: #F08C00;
             --accent-orange-bg: #FFF9DB;
-            
             --border-color: #E5E7EB;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
             --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
@@ -41,7 +37,6 @@
             padding: 48px;
         }
 
-        /* 顶部大标题 */
         .page-header {
             display: flex;
             justify-content: space-between;
@@ -74,10 +69,11 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
         .btn-primary:hover { background-color: #000; transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
-        /* 顶部异常预警条 */
         .alert-strip {
             display: none;
             background-color: var(--accent-red-bg);
@@ -90,139 +86,54 @@
         }
         .alert-strip.show { display: flex; }
         .alert-text { font-size: 14px; font-weight: 500; color: var(--accent-red); display: flex; align-items: center; gap: 8px; }
-        .alert-btn { background: var(--accent-red); color: white; border: none; padding: 6px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .alert-btn { background: var(--accent-red); color: white; border: none; padding: 6px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;}
 
-        /* KPI 数据区 */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 24px;
-            margin-bottom: 48px;
-        }
-        .kpi-card {
-            background: var(--bg-surface);
-            padding: 32px;
-            border-radius: 8px;
-            box-shadow: var(--shadow-sm);
-        }
-        .kpi-title {
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-weight: 500;
-            margin-bottom: 16px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .kpi-value {
-            font-family: 'Playfair Display', serif;
-            font-size: 40px;
-            font-weight: 600;
-            line-height: 1;
-            margin-bottom: 12px;
-            color: var(--text-primary);
-        }
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 48px; }
+        .kpi-card { background: var(--bg-surface); padding: 32px; border-radius: 8px; box-shadow: var(--shadow-sm); }
+        .kpi-title { font-size: 13px; color: var(--text-secondary); font-weight: 500; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 600; line-height: 1; margin-bottom: 12px; color: var(--text-primary); }
         .kpi-sub { font-size: 13px; color: var(--text-tertiary); }
         .kpi-sub.danger { color: var(--accent-red); font-weight: 600; }
 
-        /* 主体双栏布局 */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 32px;
-        }
+        .main-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
 
-        /* 左侧表格区 */
-        .data-panel {
-            background: var(--bg-surface);
-            border-radius: 8px;
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-        }
-        .panel-header {
-            padding: 24px 32px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 18px;
-            font-weight: 600;
-            font-family: 'Playfair Display', serif;
-        }
+        .data-panel { background: var(--bg-surface); border-radius: 8px; box-shadow: var(--shadow-sm); overflow: hidden; }
+        .panel-header { padding: 24px 32px; border-bottom: 1px solid var(--border-color); font-size: 18px; font-weight: 600; font-family: 'Playfair Display', serif; }
         .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .data-table th {
-            text-align: left; padding: 16px 32px; color: var(--text-tertiary);
-            font-weight: 500; font-size: 12px; text-transform: uppercase;
-            letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color);
-            background: #FAFAFB;
-        }
-        .data-table td {
-            padding: 20px 32px; border-bottom: 1px solid var(--border-color);
-            vertical-align: middle; transition: background 0.2s;
-        }
-        .data-table tr:hover td { background: #FAFAFB; cursor: pointer; }
-        
-        /* 异常行左侧红线标记 */
+        .data-table th { text-align: left; padding: 16px 32px; color: var(--text-tertiary); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); background: #FAFAFB; }
+        .data-table td { padding: 20px 32px; border-bottom: 1px solid var(--border-color); vertical-align: middle; transition: background 0.2s; }
+        .data-table tr:hover td { background: #FAFAFB; }
         .row-danger td:first-child { border-left: 4px solid var(--accent-red); padding-left: 28px; }
 
-        /* 标签 */
-        .tag-grade {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 24px; height: 24px; border-radius: 50%; font-size: 12px; font-weight: 700;
-        }
+        .tag-grade { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; font-weight: 700; }
         .grade-a { background: var(--accent-blue-bg); color: var(--accent-blue); }
         .grade-b { background: var(--accent-green-bg); color: var(--accent-green); }
         .grade-c { background: var(--accent-orange-bg); color: var(--accent-orange); }
         .grade-d { background: var(--accent-red-bg); color: var(--accent-red); }
+        .alert-pill { display: inline-flex; background: var(--accent-red-bg); color: var(--accent-red); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
 
-        .alert-pill {
-            display: inline-flex; background: var(--accent-red-bg); color: var(--accent-red);
-            padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
-            margin-left: 8px; vertical-align: middle;
-        }
-
-        /* 右侧洞察清单 */
         .insight-panel { display: flex; flex-direction: column; gap: 24px; }
-        .insight-card {
-            background: var(--bg-surface); border-radius: 8px; padding: 24px;
-            box-shadow: var(--shadow-sm); border-top: 3px solid var(--text-primary);
-        }
+        .insight-card { background: var(--bg-surface); border-radius: 8px; padding: 24px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--text-primary); }
         .insight-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
         .insight-list { display: flex; flex-direction: column; gap: 16px; }
-        .insight-item {
-            padding: 16px; background: var(--bg-body); border-radius: 6px;
-            border-left: 2px solid var(--border-color);
-        }
+        .insight-item { padding: 16px; background: var(--bg-body); border-radius: 6px; border-left: 2px solid var(--border-color); }
         .insight-item.risk { border-left-color: var(--accent-red); }
         .item-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; display: flex; justify-content: space-between; }
         .item-reason { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-        .item-action { font-size: 12px; color: var(--accent-blue); font-weight: 600; margin-top: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
+        .item-action { font-size: 12px; color: var(--accent-blue); font-weight: 600; margin-top: 12px; text-decoration: none; display: block;}
 
-        /* 弹窗 */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 100;
-        }
-        .modal-overlay.active { display: flex; }
-        .modal {
-            background: var(--bg-surface); border-radius: 12px; width: 560px;
-            padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
-            border: 1px solid var(--border-color);
-        }
+        /* 弹窗使用原生 CSS 伪类，不依赖 JS 点击 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-overlay:target { display: flex; }
+        .modal { background: var(--bg-surface); border-radius: 12px; width: 560px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); border: 1px solid var(--border-color); position: relative; }
         .modal-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; margin-bottom: 32px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         .form-group.full { grid-column: span 2; }
         .form-group label { display: block; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 500; }
-        .form-group input, .form-group select {
-            width: 100%; padding: 12px 16px; background: var(--bg-body);
-            border: 1px solid transparent; border-radius: 4px; color: var(--text-primary);
-            font-size: 14px; transition: all 0.2s;
-        }
-        .form-group input:focus, .form-group select:focus {
-            outline: none; border-color: var(--text-primary); background: #fff;
-            box-shadow: 0 0 0 3px rgba(26, 29, 32, 0.05);
-        }
-        .form-hint { font-size: 12px; color: var(--text-tertiary); margin-top: 6px; }
-        .form-hint.danger { color: var(--accent-red); }
+        .form-group input, .form-group select { width: 100%; padding: 12px 16px; background: var(--bg-body); border: 1px solid transparent; border-radius: 4px; color: var(--text-primary); font-size: 14px; transition: all 0.2s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--text-primary); background: #fff; box-shadow: 0 0 0 3px rgba(26, 29, 32, 0.05); }
         .modal-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 32px; }
-        .btn-secondary { background: transparent; border: none; color: var(--text-secondary); font-weight: 500; padding: 12px 24px; cursor: pointer; }
+        .btn-secondary { background: transparent; border: none; color: var(--text-secondary); font-weight: 500; padding: 12px 24px; cursor: pointer; text-decoration: none; display: inline-block;}
         .btn-secondary:hover { color: var(--text-primary); }
         .btn-save { background: var(--text-primary); color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: 500; cursor: pointer; }
         .btn-save:hover { background: #000; }
@@ -241,7 +152,7 @@
             <span>⚠️</span>
             <span id="alertMessage">系统检测到供应商数据异常，请及时处理。</span>
         </div>
-        <button class="alert-btn" onclick="document.querySelector('.data-panel').scrollIntoView({behavior: 'smooth'})">查看详情</button>
+        <a href="#data-panel" class="alert-btn">查看详情</a>
     </div>
 
     <div class="page-header">
@@ -249,7 +160,8 @@
             <h1>猎头渠道效能与风险洞察</h1>
             <p>Talent Acquisition ROI & Risk Dashboard</p>
         </div>
-        <button class="btn-primary" id="btnAdd">录入最新数据 +</button>
+        <!-- 弹窗按钮改成纯 HTML 锚点 -->
+        <a href="#addModal" class="btn-primary">录入最新数据 +</a>
     </div>
 
     <div class="kpi-grid">
@@ -275,9 +187,9 @@
         </div>
     </div>
 
-    <div class="main-layout">
+    <div class="main-layout" id="data-panel">
         <div class="data-panel">
-            <div class="panel-header">供应商明细看板</div>
+            <div class="panel-header">供应商明细看板 (点击行可编辑)</div>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -302,19 +214,19 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modalOverlay">
+    <!-- 新增弹窗 -->
+    <div class="modal-overlay" id="addModal">
         <div class="modal">
-            <div class="modal-title" id="modalTitle">录入新数据</div>
-            <form id="dataForm">
-                <input type="hidden" id="supplierId">
+            <div class="modal-title">录入新数据</div>
+            <form id="addForm">
                 <div class="form-grid">
                     <div class="form-group full">
                         <label>供应商名称 *</label>
-                        <input type="text" id="inputName" required placeholder="例如：猎头A">
+                        <input type="text" id="addName" required placeholder="例如：猎头A">
                     </div>
                     <div class="form-group">
                         <label>评级</label>
-                        <select id="inputGrade">
+                        <select id="addGrade">
                             <option value="A">A级 (核心)</option>
                             <option value="B">B级 (稳定)</option>
                             <option value="C">C级 (观察)</option>
@@ -323,33 +235,85 @@
                     </div>
                     <div class="form-group">
                         <label>已付费用 (万元)</label>
-                        <input type="number" step="0.1" id="inputCost" value="0">
+                        <input type="number" step="0.1" id="addCost" value="0">
                     </div>
                     <div class="form-group">
                         <label>入职总人数</label>
-                        <input type="number" id="inputHires" value="0">
+                        <input type="number" id="addHires" value="0">
                     </div>
                     <div class="form-group">
                         <label>高职级人数 (P5/M4+)</label>
-                        <input type="number" id="inputHighHires" value="0">
+                        <input type="number" id="addHighHires" value="0">
                     </div>
                     <div class="form-group">
                         <label>加权总分</label>
-                        <input type="number" step="0.1" id="inputScore" value="0">
+                        <input type="number" step="0.1" id="addScore" value="0">
                     </div>
                     <div class="form-group">
                         <label>保期留存率 (%)</label>
-                        <input type="number" step="0.1" id="inputRetention" value="0" max="100">
-                        <div class="form-hint" id="retentionHint">低于 60% 将触发红线预警</div>
+                        <input type="number" step="0.1" id="addRetention" value="0" max="100">
                     </div>
                     <div class="form-group full">
                         <label>备注/状态 (可选)</label>
-                        <input type="text" id="inputStatus" placeholder="例如：健康运转">
+                        <input type="text" id="addStatus" placeholder="例如：健康运转">
                     </div>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" id="btnCancel">取消</button>
-                    <button type="submit" class="btn-save" id="btnSave">保存数据</button>
+                    <a href="#" class="btn-secondary">取消</a>
+                    <button type="submit" class="btn-save" id="btnSaveAdd">保存数据</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-title">更新供应商数据</div>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>供应商名称 *</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>评级</label>
+                        <select id="editGrade">
+                            <option value="A">A级 (核心)</option>
+                            <option value="B">B级 (稳定)</option>
+                            <option value="C">C级 (观察)</option>
+                            <option value="D">D级 (淘汰)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>已付费用 (万元)</label>
+                        <input type="number" step="0.1" id="editCost">
+                    </div>
+                    <div class="form-group">
+                        <label>入职总人数</label>
+                        <input type="number" id="editHires">
+                    </div>
+                    <div class="form-group">
+                        <label>高职级人数 (P5/M4+)</label>
+                        <input type="number" id="editHighHires">
+                    </div>
+                    <div class="form-group">
+                        <label>加权总分</label>
+                        <input type="number" step="0.1" id="editScore">
+                    </div>
+                    <div class="form-group">
+                        <label>保期留存率 (%)</label>
+                        <input type="number" step="0.1" id="editRetention" max="100">
+                    </div>
+                    <div class="form-group full">
+                        <label>备注/状态 (可选)</label>
+                        <input type="text" id="editStatus">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <a href="#" class="btn-secondary">取消</a>
+                    <button type="submit" class="btn-save" id="btnSaveEdit">保存修改</button>
                 </div>
             </form>
         </div>
@@ -357,10 +321,10 @@
 
     <script>
         // ==========================================
-        // 1. 填入你的 Supabase 凭证
+        // 1. Supabase 凭证
         // ==========================================
-        const SUPABASE_URL = '你的_SUPABASE_PROJECT_URL';
-        const SUPABASE_ANON_KEY = '你的_SUPABASE_ANON_KEY';
+        const SUPABASE_URL = 'https://dqqmfurqnvearnigikez.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_E4UqnalDjXJLBhDynDKmgg_72PhM1UR'; 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const tableBody = document.getElementById('tableBody');
@@ -368,10 +332,13 @@
         const alertStrip = document.getElementById('alertStrip');
         const alertMessage = document.getElementById('alertMessage');
 
-        // 2. 获取并渲染数据
         async function fetchData() {
             const { data, error } = await supabase.from('hunter_suppliers').select('*').order('weighted_score', { ascending: false });
-            if (error) { console.error(error); return; }
+            if (error) { 
+                console.error('数据库拉取失败：', error); 
+                tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--accent-red); padding: 40px;">拉取失败，详情按 F12 查看控制台。</td></tr>`;
+                return; 
+            }
             renderUI(data);
         }
 
@@ -417,9 +384,9 @@
                 if (isDanger) riskySuppliers.push(item);
 
                 html += `
-                    <tr class="${isDanger ? 'row-danger' : ''}" onclick="openEditModal('${item.id}')">
+                    <tr class="${isDanger ? 'row-danger' : ''}">
                         <td>
-                            <span style="font-weight: 600; font-size: 15px;">${item.name}</span>
+                            <a href="#editModal" onclick="fillEditForm('${item.id}')" style="font-weight: 600; font-size: 15px; text-decoration: none; color: inherit;">${item.name}</a>
                             ${isDanger ? '<span class="alert-pill">需干预</span>' : ''}
                         </td>
                         <td><span class="tag-grade grade-${item.grade.toLowerCase()}">${item.grade}</span></td>
@@ -436,7 +403,7 @@
 
             if (riskySuppliers.length > 0) {
                 alertStrip.classList.add('show');
-                alertMessage.innerHTML = `系统监测到 <strong>${riskySuppliers.length}</strong> 家供应商保期留存率低于 60% 红线，建议立即缩减派单或约谈。`;
+                alertMessage.innerHTML = `监测到 <strong>${riskySuppliers.length}</strong> 家供应商留存率跌破 60%。`;
                 
                 let riskHtml = '';
                 riskySuppliers.forEach(r => {
@@ -446,78 +413,77 @@
                                 <span>${r.name}</span>
                                 <span class="tag-grade grade-${r.grade.toLowerCase()}" style="width:20px; height:20px; font-size:10px;">${r.grade}</span>
                             </div>
-                            <div class="item-reason">保期留存率仅为 ${r.retention_rate}%，低于公司红线（60%）。可能存在过度包装或岗位匹配度低的问题。</div>
-                            <div class="item-action" onclick="openEditModal('${r.id}')">去复核数据 / 发起整改 →</div>
+                            <div class="item-reason">留存率 ${r.retention_rate}%，低于 60% 红线。</div>
+                            <a href="#editModal" onclick="fillEditForm('${r.id}')" class="item-action">去复核数据 / 发起整改 →</a>
                         </div>
                     `;
                 });
                 riskList.innerHTML = riskHtml;
             } else {
                 alertStrip.classList.remove('show');
-                riskList.innerHTML = `<div style="font-size: 13px; color: var(--accent-green); text-align: center; padding: 20px 0;">✨ 所有供应商指标均处于健康区间</div>`;
+                riskList.innerHTML = `<div style="font-size: 13px; color: var(--accent-green); text-align: center; padding: 20px 0;">✨ 所有供应商指标均健康</div>`;
             }
         }
 
-        // 3. 弹窗与表单逻辑
-        let isEditMode = false;
-        const modalOverlay = document.getElementById('modalOverlay');
-        
-        document.getElementById('btnAdd').addEventListener('click', () => {
-            isEditMode = false;
-            document.getElementById('modalTitle').innerText = '录入新数据';
-            document.getElementById('dataForm').reset();
-            document.getElementById('supplierId').value = '';
-            modalOverlay.classList.add('active');
-        });
-
-        window.openEditModal = async (id) => {
-            isEditMode = true;
-            document.getElementById('modalTitle').innerText = '更新供应商数据';
+        // 渲染编辑弹窗
+        window.fillEditForm = async (id) => {
             const { data, error } = await supabase.from('hunter_suppliers').select('*').eq('id', id).single();
             if (error) return;
-
-            document.getElementById('supplierId').value = data.id;
-            document.getElementById('inputName').value = data.name;
-            document.getElementById('inputGrade').value = data.grade;
-            document.getElementById('inputCost').value = data.total_cost;
-            document.getElementById('inputHires').value = data.total_hires;
-            document.getElementById('inputHighHires').value = data.high_level_hires;
-            document.getElementById('inputScore').value = data.weighted_score;
-            document.getElementById('inputRetention').value = data.retention_rate;
-            document.getElementById('inputStatus').value = data.status;
-            modalOverlay.classList.add('active');
+            document.getElementById('editId').value = data.id;
+            document.getElementById('editName').value = data.name;
+            document.getElementById('editGrade').value = data.grade;
+            document.getElementById('editCost').value = data.total_cost;
+            document.getElementById('editHires').value = data.total_hires;
+            document.getElementById('editHighHires').value = data.high_level_hires;
+            document.getElementById('editScore').value = data.weighted_score;
+            document.getElementById('editRetention').value = data.retention_rate;
+            document.getElementById('editStatus').value = data.status;
         };
 
-        document.getElementById('btnCancel').addEventListener('click', () => modalOverlay.classList.remove('active'));
-
-        document.getElementById('dataForm').addEventListener('submit', async (e) => {
+        // 提交新增
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('supplierId').value;
             const payload = {
-                name: document.getElementById('inputName').value,
-                grade: document.getElementById('inputGrade').value,
-                total_cost: parseFloat(document.getElementById('inputCost').value) || 0,
-                total_hires: parseInt(document.getElementById('inputHires').value) || 0,
-                high_level_hires: parseInt(document.getElementById('inputHighHires').value) || 0,
-                weighted_score: parseFloat(document.getElementById('inputScore').value) || 0,
-                retention_rate: parseFloat(document.getElementById('inputRetention').value) || 0,
-                status: document.getElementById('inputStatus').value
+                name: document.getElementById('addName').value,
+                grade: document.getElementById('addGrade').value,
+                total_cost: parseFloat(document.getElementById('addCost').value) || 0,
+                total_hires: parseInt(document.getElementById('addHires').value) || 0,
+                high_level_hires: parseInt(document.getElementById('addHighHires').value) || 0,
+                weighted_score: parseFloat(document.getElementById('addScore').value) || 0,
+                retention_rate: parseFloat(document.getElementById('addRetention').value) || 0,
+                status: document.getElementById('addStatus').value
             };
-
-            if (isEditMode) {
-                await supabase.from('hunter_suppliers').update(payload).eq('id', id);
-            } else {
-                await supabase.from('hunter_suppliers').insert([payload]);
-            }
-            modalOverlay.classList.remove('active');
+            await supabase.from('hunter_suppliers').insert([payload]);
+            window.location.hash = ''; // 关闭弹窗
             fetchData();
         });
 
-        // 4. 实时订阅
-        supabase.channel('4a-dashboard')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'hunter_suppliers' }, () => fetchData())
-            .subscribe();
-            
+        // 提交编辑
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const payload = {
+                name: document.getElementById('editName').value,
+                grade: document.getElementById('editGrade').value,
+                total_cost: parseFloat(document.getElementById('editCost').value) || 0,
+                total_hires: parseInt(document.getElementById('editHires').value) || 0,
+                high_level_hires: parseInt(document.getElementById('editHighHires').value) || 0,
+                weighted_score: parseFloat(document.getElementById('editScore').value) || 0,
+                retention_rate: parseFloat(document.getElementById('editRetention').value) || 0,
+                status: document.getElementById('editStatus').value
+            };
+            await supabase.from('hunter_suppliers').update(payload).eq('id', id);
+            window.location.hash = ''; // 关闭弹窗
+            fetchData();
+        });
+
+        // 监听 hash 变化清理页面
+        window.addEventListener('hashchange', () => {
+            if(window.location.hash === '#addModal') {
+                document.getElementById('addForm').reset();
+            }
+        });
+
         // 初始化
         fetchData();
     </script>
