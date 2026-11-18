@@ -1,513 +1,1646 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>猎头渠道效能与风险洞察</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>猎头渠道 ROI 分析看板</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230E5A4E'/%3E%3Cpath d='M10 44h8v-12h-8zM20 44h8v-20h-8zM30 44h8v-28h-8zM40 44h8v-16h-8z' fill='%23F3F5F3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@700;900&display=swap">
+<script src="https://fastly.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+:root{
+  --paper:#F4F6F3;
+  --panel:#FFFFFF;
+  --ink:#14201D;
+  --ink2:#3D4B47;
+  --ink3:#798581;
+  --rule:#DFE3DD;
+  --rule2:#BFC7C0;
+  --teal:#0E5A4E;
+  --teal-mid:#3E8375;
+  --teal-soft:#E2EBE7;
+  --amber:#A97618;
+  --amber-soft:#F5EEDF;
+  --plum:#6B5477;
+  --steel:#44637D;
+  --pos:#0E5A4E;
+  --neg:#A63A2E;
+  --cmp:#9AA7A2;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --deep:var(--teal);
+  --line:var(--rule);
+  --line-2:var(--rule2);
+  --mid:var(--ink3);
+  --ink-2:var(--ink2);
+  --paper-2:#FAFBF9;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{margin:0;font-family:var(--sans);line-height:1.35}
+p{margin:0}
+button{font-family:inherit}
+.wrap{max-width:1440px;margin:0 auto;padding:0 26px 60px}
 
-        :root {
-            --bg-body: #F7F8FA;
-            --bg-surface: #FFFFFF;
-            --text-primary: #1A1D20;
-            --text-secondary: #6B7280;
-            --text-tertiary: #9CA3AF;
-            --accent-blue: #3B5BDB;
-            --accent-blue-bg: #EDF2FF;
-            --accent-green: #0CA678;
-            --accent-green-bg: #E6FCF5;
-            --accent-red: #E03131;
-            --accent-red-bg: #FFF5F5;
-            --accent-orange: #F08C00;
-            --accent-orange-bg: #FFF9DB;
-            --border-color: #E5E7EB;
-            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
-        }
+/* ---------- 顶栏 ---------- */
+.stick{position:sticky;top:0;z-index:30;background:var(--paper);border-bottom:1px solid var(--rule2)}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:22px 0 16px;flex-wrap:wrap}
+.top h1{font-family:var(--serif);font-weight:900;font-size:27px;letter-spacing:.01em}
+.top .sub{font-size:12.5px;color:var(--ink3);margin-top:5px}
+.top .sub b{color:var(--ink2);font-weight:500}
+.stampwrap{display:flex;align-items:center;gap:10px}
+.stamp{font-size:11px;letter-spacing:.1em;color:var(--amber);background:var(--amber-soft);border:1px solid #E3D4B3;padding:3px 9px;white-space:nowrap}
+.btn-export{font-size:12px;color:var(--ink2);background:#fff;border:1px solid var(--rule2);padding:5px 12px;cursor:pointer;white-space:nowrap}
+.btn-export:hover{border-color:var(--teal);color:var(--teal)}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ---------- 筛选 ---------- */
+.filters{padding:0 0 14px;display:grid;gap:9px}
+.frow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.flabel{font-size:11.5px;letter-spacing:.12em;color:var(--ink3);min-width:44px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.fixed-entity{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink);border:1px solid var(--rule2);background:#fff;padding:5px 13px}
+.fixed-entity::before{content:'';width:5px;height:5px;background:var(--teal);display:inline-block}
+.chip{font-size:12.5px;padding:4px 11px;border:1px solid var(--rule2);background:#fff;color:var(--ink2);cursor:pointer;transition:.15s;white-space:nowrap}
+.chip:hover{border-color:var(--teal);color:var(--teal)}
+.chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.seg{display:flex;border:1px solid var(--rule2);background:#fff}
+.seg button{font-size:12.5px;padding:5px 13px;border:0;background:transparent;color:var(--ink2);cursor:pointer;border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#fff}
+.seg button:hover:not(.on){background:var(--teal-soft);color:var(--teal)}
+select{font-family:inherit;font-size:12.5px;color:var(--ink2);border:1px solid var(--rule2);background:#fff;padding:5px 6px;cursor:pointer}
+select:focus{outline:2px solid var(--teal-soft);border-color:var(--teal)}
+.sep{color:var(--ink3);font-size:12px}
+.reset{font-size:12px;color:var(--teal);background:none;border:0;border-bottom:1px solid var(--teal);padding:0 0 1px;cursor:pointer;margin-left:auto}
+.hintline{font-size:11.5px;color:var(--ink3)}
 
-        body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-primary);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            padding: 48px;
-        }
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border:1px solid var(--rule);background:var(--panel);margin-top:18px}
+.kpiscope{font-size:11.5px;line-height:1.7;color:var(--ink3);border-bottom:1px solid var(--rule);padding:0 0 10px;margin:-2px 0 14px}
+.kpiscope b{color:var(--ink2)}
+.kpi{padding:16px 18px 14px;border-right:1px solid var(--rule);min-width:0;position:relative}
+.kpi:last-child{border-right:0}
+.kpi .k{font-size:11.5px;color:var(--ink3);letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .v{font-size:27px;font-weight:700;line-height:1.25;margin-top:6px;letter-spacing:-.01em}
+.kpi .v u{font-size:13px;font-weight:400;color:var(--ink3);text-decoration:none;margin-left:3px}
+.kpi .d{font-size:11.5px;margin-top:5px;display:flex;align-items:center;gap:5px}
+.kpi .d b{font-weight:700}
+.kpi .d .lab{color:var(--ink3)}
+.spark{position:absolute;right:14px;top:14px;width:64px;height:22px;opacity:.85}
+.pos{color:var(--pos)}
+.neg{color:var(--neg)}
 
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            margin-bottom: 48px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .title-group h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 36px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-        .title-group p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .btn-primary {
-            background-color: var(--text-primary);
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-primary:hover { background-color: #000; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+/* ---------- 面板 ---------- */
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px;margin-top:14px}
+.panel{background:var(--panel);border:1px solid var(--rule);padding:16px 18px 12px;min-width:0}
+.panel.w6{grid-column:span 6}
+.panel.w5{grid-column:span 5}
+.panel.w4{grid-column:span 4}
+.panel.w3{grid-column:span 3}
+.panel.w7{grid-column:span 7}
+.panel.w12{grid-column:span 12}
+.ph{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid var(--rule);padding-bottom:9px;margin-bottom:10px;flex-wrap:wrap}
+.ph h3{font-size:14.5px;font-weight:700;letter-spacing:.01em}
+.ph .ps{font-size:11.5px;color:var(--ink3);font-weight:400}
+.ph .tools{display:flex;gap:6px;align-items:center}
+.mini-btn{font-size:11.5px;padding:2px 8px;border:1px solid var(--rule2);background:#fff;color:var(--ink3);cursor:pointer}
+.mini-btn.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.chart{width:100%;height:300px}
+.chart.sm{height:230px}
+.chart.xs{height:200px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.row3 .cell{min-width:0}
+.row3 .ct{font-size:11.5px;color:var(--ink3);margin-bottom:2px}
+.legend-note{font-size:11.5px;color:var(--ink3);margin-top:8px;line-height:1.7}
+.legend-note i{display:inline-block;width:16px;height:2px;background:var(--teal);vertical-align:middle;margin-right:5px}
+.legend-note em{display:inline-block;width:16px;height:2px;background:var(--cmp);vertical-align:middle;margin:0 5px 0 12px}
 
-        .alert-strip {
-            display: none;
-            background-color: var(--accent-red-bg);
-            border-left: 4px solid var(--accent-red);
-            padding: 16px 24px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 40px;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .alert-strip.show { display: flex; }
-        .alert-text { font-size: 14px; font-weight: 500; color: var(--accent-red); display: flex; align-items: center; gap: 8px; }
-        .alert-btn { background: var(--accent-red); color: white; border: none; padding: 6px 16px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none;}
+/* 供应商详情 */
+.detail{border:1px solid var(--rule);background:#FAFBF8;margin-top:12px;padding:12px 14px;display:none}
+.detail.show{display:block}
+.detail h4{font-size:13px;font-weight:700;margin-bottom:2px}
+.detail .meta{font-size:11.5px;color:var(--ink3);margin-bottom:10px}
+.detail .dgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:8px}
+.detail .dgrid div{font-size:11.5px;color:var(--ink3)}
+.detail .dgrid b{display:block;font-size:17px;color:var(--ink);font-weight:700;margin-top:2px}
+.detail .chart{height:160px}
 
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 48px; }
-        .kpi-card { background: var(--bg-surface); padding: 32px; border-radius: 8px; box-shadow: var(--shadow-sm); }
-        .kpi-title { font-size: 13px; color: var(--text-secondary); font-weight: 500; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .kpi-value { font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 600; line-height: 1; margin-bottom: 12px; color: var(--text-primary); }
-        .kpi-sub { font-size: 13px; color: var(--text-tertiary); }
-        .kpi-sub.danger { color: var(--accent-red); font-weight: 600; }
+/* ---------- 表格 ---------- */
+.tblwrap{overflow-x:auto;margin-top:4px}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px;min-width:960px}
+th,td{border-bottom:1px solid var(--rule);padding:8px 10px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:#fff;z-index:2}
+th{background:#EDF1EC;font-weight:700;font-size:11.5px;letter-spacing:.03em;color:var(--ink2);cursor:pointer;user-select:none;border-bottom:1px solid var(--rule2)}
+th:hover{color:var(--teal)}
+th.sorted::after{content:" ↓";color:var(--teal)}
+th.sorted.asc::after{content:" ↑"}
+td.pos{color:var(--pos)}
+td.neg{color:var(--neg)}
+tr:hover td{background:#F7FAF7}
+tr:hover td:first-child{background:#F7FAF7}
+.tfoot{margin-top:10px;font-size:11.5px;color:var(--ink3);line-height:1.75}
 
-        .main-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
+/* 口径说明 */
+.notes{margin-top:20px;border-top:2px solid var(--ink);padding-top:14px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.notes h4{font-size:12px;letter-spacing:.08em;color:var(--ink2);margin-bottom:7px}
+.notes p{font-size:11.5px;color:var(--ink3);line-height:1.8}
+.empty{padding:40px 0;text-align:center;color:var(--ink3);font-size:12.5px}
 
-        .data-panel { background: var(--bg-surface); border-radius: 8px; box-shadow: var(--shadow-sm); overflow: hidden; }
-        .panel-header { padding: 24px 32px; border-bottom: 1px solid var(--border-color); font-size: 18px; font-weight: 600; font-family: 'Playfair Display', serif; }
-        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .data-table th { text-align: left; padding: 16px 32px; color: var(--text-tertiary); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border-color); background: #FAFAFB; }
-        .data-table td { padding: 20px 32px; border-bottom: 1px solid var(--border-color); vertical-align: middle; transition: background 0.2s; }
-        .data-table tr:hover td { background: #FAFAFB; }
-        .row-danger td:first-child { border-left: 4px solid var(--accent-red); padding-left: 28px; }
+/* ---------- 响应式 ---------- */
+@media (max-width:1180px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kpi:nth-child(3){border-right:0}
+  .panel.w6,.panel.w5,.panel.w4,.panel.w3,.panel.w7{grid-column:span 6}
+  .notes{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .wrap{padding:0 14px 40px}
+  .stick{position:static}
+  .top h1{font-size:22px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi{border-right:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .panel.w6,.panel.w5,.panel.w4,.panel.w3,.panel.w7,.panel.w12{grid-column:span 12}
+  .row3{grid-template-columns:minmax(0,1fr)}
+  .flabel{min-width:100%}
+  .detail .dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chart{height:260px}
+}
+@media print{
+  .stick{position:static}
+  .filters,.btn-export,.reset{display:none}
+  body{background:#fff}
+}
+/* ---- 录入 / 数据源 ---- */
+.overlay{position:fixed;inset:0;background:rgba(18,40,34,.42);display:none;z-index:60;padding:24px;overflow:auto}
+.overlay.show{display:flex;align-items:flex-start;justify-content:center}
+.modal{background:var(--paper);width:min(880px,100%);max-width:100%;min-width:0;border:1px solid var(--line-2);box-shadow:0 18px 50px rgba(14,58,46,.18)}
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.mhead h3{font-family:var(--serif);font-size:17px;letter-spacing:.02em;margin:0}
+.mhead .mx{border:none;background:none;font-size:20px;line-height:1;color:var(--mid);cursor:pointer;padding:4px 6px}
+.mtabs{display:flex;gap:0;border-bottom:1px solid var(--line);padding:0 20px}
+.mtab{border:none;background:none;padding:11px 2px;margin-right:22px;font-size:13px;color:var(--mid);cursor:pointer;border-bottom:2px solid transparent;font-family:inherit}
+.mtab.on{color:var(--deep);border-bottom-color:var(--deep);font-weight:600}
+.mbody{padding:18px 20px 22px}
+.form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px}
+.form label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--ink-2);min-width:0}
+.form input,.form select{font:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line-2);background:#fff;color:var(--ink);border-radius:0;width:100%;min-width:0;max-width:100%;text-overflow:ellipsis}
+.form input:focus,.form select:focus{outline:2px solid rgba(14,90,78,.25);outline-offset:-1px}
+.cblabel{flex-direction:row!important;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-2)}
+.cblabel input{width:auto}
+.mact{display:flex;align-items:center;gap:14px;margin-top:16px}
+.primary{background:var(--deep);color:#fff;border:1px solid var(--deep);padding:9px 20px;font-size:13px;cursor:pointer;font-family:inherit;letter-spacing:.02em}
+.primary:hover{background:#0a463c}
+.primary.ghost{background:transparent;color:var(--deep)}
+.primary.ghost:hover{background:rgba(14,90,78,.06)}
+.mact .msgtip{font-size:12px;color:var(--mid)}
+.mlist{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.mlist h4{margin:0 0 8px;font-size:12px;letter-spacing:.08em;color:var(--mid);font-weight:600}
+.mlist table{width:100%;min-width:0;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.mlist th{text-align:left;font-weight:600;color:var(--mid);border-bottom:1px solid var(--line);padding:6px 8px;font-size:11px;letter-spacing:.04em}
+.mlist td{border-bottom:1px solid var(--line);padding:7px 8px;color:var(--ink-2);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlist .del{border:none;background:none;color:var(--neg);cursor:pointer;font-size:12px;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
+.cfgrow{display:grid;grid-template-columns:150px 1fr;gap:10px 14px;align-items:center;margin-bottom:12px}
+.cfgrow span{font-size:12px;color:var(--ink-2)}
+.cfgrow input{font:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--line-2);background:#fff;width:100%}
+.note-box{background:var(--paper-2);border:1px solid var(--line);padding:12px 14px;font-size:12px;line-height:1.75;color:var(--ink-2);margin-top:14px}
+.note-box b{color:var(--ink)}
+.note-box code{font-family:var(--mono);font-size:11.5px;background:#fff;border:1px solid var(--line);padding:1px 5px}
+.toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(12px);background:var(--deep);color:#fff;padding:10px 20px;font-size:13px;opacity:0;pointer-events:none;transition:.22s;z-index:80}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.warn{background:#8A5A12}
+@media (max-width:720px){.form{grid-template-columns:repeat(2,minmax(0,1fr))}.cfgrow{grid-template-columns:1fr}.mlist table{font-size:11px}}
 
-        .tag-grade { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; font-weight: 700; }
-        .grade-a { background: var(--accent-blue-bg); color: var(--accent-blue); }
-        .grade-b { background: var(--accent-green-bg); color: var(--accent-green); }
-        .grade-c { background: var(--accent-orange-bg); color: var(--accent-orange); }
-        .grade-d { background: var(--accent-red-bg); color: var(--accent-red); }
-        .alert-pill { display: inline-flex; background: var(--accent-red-bg); color: var(--accent-red); padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
-
-        .insight-panel { display: flex; flex-direction: column; gap: 24px; }
-        .insight-card { background: var(--bg-surface); border-radius: 8px; padding: 24px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--text-primary); }
-        .insight-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-        .insight-list { display: flex; flex-direction: column; gap: 16px; }
-        .insight-item { padding: 16px; background: var(--bg-body); border-radius: 6px; border-left: 2px solid var(--border-color); }
-        .insight-item.risk { border-left-color: var(--accent-red); }
-        .item-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; display: flex; justify-content: space-between; }
-        .item-reason { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-        .item-action { font-size: 12px; color: var(--accent-blue); font-weight: 600; margin-top: 12px; text-decoration: none; display: block;}
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 100; }
-        .modal-overlay:target { display: flex; }
-        .modal { background: var(--bg-surface); border-radius: 12px; width: 560px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); border: 1px solid var(--border-color); position: relative; }
-        .modal-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; margin-bottom: 32px; }
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .form-group.full { grid-column: span 2; }
-        .form-group label { display: block; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 500; }
-        .form-group input, .form-group select { width: 100%; padding: 12px 16px; background: var(--bg-body); border: 1px solid transparent; border-radius: 4px; color: var(--text-primary); font-size: 14px; transition: all 0.2s; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--text-primary); background: #fff; box-shadow: 0 0 0 3px rgba(26, 29, 32, 0.05); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 16px; margin-top: 32px; }
-        .btn-secondary { background: transparent; border: none; color: var(--text-secondary); font-weight: 500; padding: 12px 24px; cursor: pointer; text-decoration: none; display: inline-block;}
-        .btn-secondary:hover { color: var(--text-primary); }
-        .btn-save { background: var(--text-primary); color: white; border: none; padding: 12px 24px; border-radius: 4px; font-weight: 500; cursor: pointer; }
-        .btn-save:hover { background: #000; }
-
-        @media (max-width: 1200px) {
-            .main-layout { grid-template-columns: 1fr; }
-            .kpi-grid { grid-template-columns: 1fr 1fr; }
-        }
-    </style>
-    <!-- 引入 Supabase 官方脚本 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</style>
 </head>
 <body>
+<div class="wrap">
 
-    <div id="errorBanner" style="display:none; background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:16px; margin-bottom:24px; border-radius:8px;">
-        <strong>⚠️ 数据库连接失败：</strong> <span id="errorMessage">请按 F12 查看控制台错误。</span>
+  <div class="stick">
+    <div class="top">
+      <div>
+        <h1>猎头渠道 ROI 分析看板</h1>
+        <p class="sub">口径：<b>费用 = 猎头服务费（20% / 22% 费率 × offer 固定税前年薪）</b>；<b>ROI = 空岗成本 / 猎头费用</b>；保期按 6 个月试用期统计。</p>
+      </div>
+      <div class="stampwrap">
+        <span class="stamp" id="dataStamp">示例数据 · 本地保存</span>
+        <button class="btn-export" id="btnEntry">录入数据</button>
+        <button class="btn-export" id="btnCloud">数据源 / Supabase</button>
+        <button class="btn-export" id="btnExport">导出 CSV</button>
+      </div>
     </div>
 
-    <div class="alert-strip" id="alertStrip">
-        <div class="alert-text">
-            <span>⚠️</span>
-            <span id="alertMessage">系统检测到供应商数据异常，请及时处理。</span>
+    <div class="filters">
+      <div class="frow">
+        <div class="flabel">主体</div>
+        <div class="fixed-entity">海底捞（中国）</div>
+        <div class="flabel" style="margin-left:14px">数据范围</div>
+        <div class="seg" id="dataScope">
+          <button data-v="demo" class="on">示例 + 录入</button>
+          <button data-v="real">仅录入 / 线上</button>
         </div>
-        <a href="#data-panel" class="alert-btn">查看详情</a>
+        <span class="hintline" id="scopeHint">当前：示例历史数据 + 手动录入记录</span>
+      </div>
+
+      <div class="frow">
+        <div class="flabel">时间</div>
+        <div class="seg" id="granularity">
+          <button data-v="month" class="on">按月</button>
+          <button data-v="quarter">按季</button>
+          <button data-v="year">按年</button>
+        </div>
+        <select id="startSel"></select><span class="sep">至</span><select id="endSel"></select>
+        <div class="seg" id="cmpMode" style="margin-left:8px">
+          <button data-v="yoy" class="on">同比 YoY</button>
+          <button data-v="mom">环比 MoM</button>
+          <button data-v="custom">自定义</button>
+        </div>
+        <span id="cmpBox" style="display:none">
+          <select id="cmpStartSel"></select><span class="sep">至</span><select id="cmpEndSel"></select>
+        </span>
+        <span class="hintline" id="cmpHint"></span>
+      </div>
+
+      <div class="frow">
+        <div class="flabel">职级</div>
+        <div class="chips" id="levelChips"></div>
+        <div class="flabel" style="margin-left:10px">猎头等级</div>
+        <div class="chips" id="gradeChips"></div>
+        <button class="reset" id="btnReset">重置筛选</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpis" id="kpis"></div>
+  <div class="kpiscope">本看板只统计<b>猎头渠道</b>：费用、入职、单入职成本、到岗周期、保期留存、ROI 与供应商排名均由猎头服务费与猎头入职数据计算，已不含内推、官网直招、招聘平台的数据。</div>
+
+  <div class="grid">
+    <div class="panel w6">
+      <div class="ph"><h3>猎头费用走势</h3><span class="ps" id="phCost"></span></div>
+      <div class="chart" id="chartCost"></div>
+      <div class="legend-note"><i></i>本期费用<em></em>对比期费用<span style="margin-left:12px;color:#A08A55">· 点击折线可把区间切到该期</span></div>
     </div>
 
-    <div class="page-header">
-        <div class="title-group">
-            <h1>猎头渠道效能与风险洞察</h1>
-            <p>Talent Acquisition ROI & Risk Dashboard</p>
-        </div>
-        <a href="#addModal" class="btn-primary">录入最新数据 +</a>
+    <div class="panel w6">
+      <div class="ph"><h3>入职人数走势</h3><span class="ps" id="phHire"></span></div>
+      <div class="chart" id="chartHire"></div>
+      <div class="legend-note"><i></i>本期入职<em></em>对比期入职<span style="margin-left:12px;color:#A08A55">· 点击柱形可把区间切到该期</span></div>
     </div>
 
-    <div class="kpi-grid">
-        <div class="kpi-card">
-            <div class="kpi-title">渠道总投入 (万元)</div>
-            <div class="kpi-value" id="kpi-total-cost">--</div>
-            <div class="kpi-sub">包含已付与应付尾款</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">实际入职 (人)</div>
-            <div class="kpi-value" id="kpi-total-hires">--</div>
-            <div class="kpi-sub" id="kpi-high-hires">高职级占比 --%</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">加权分产出</div>
-            <div class="kpi-value" id="kpi-total-score">--</div>
-            <div class="kpi-sub">基于 P/T/M 职级系数</div>
-        </div>
-        <div class="kpi-card">
-            <div class="kpi-title">综合保期留存率</div>
-            <div class="kpi-value" id="kpi-retention">--</div>
-            <div class="kpi-sub" id="kpi-retention-hint">红线健康值 ≥ 60%</div>
-        </div>
+    <div class="panel w6">
+      <div class="ph"><h3>猎头等级效能</h3><span class="ps">S / A / B / C 级 · 单位成本 · 到岗周期 · 保期留存</span></div>
+      <div class="row3">
+        <div class="cell"><div class="ct">单位入职成本</div><div class="chart xs" id="cUnitCost"></div></div>
+        <div class="cell"><div class="ct">平均到岗周期</div><div class="chart xs" id="cDays"></div></div>
+        <div class="cell"><div class="ct">6 个月保期留存</div><div class="chart xs" id="cRet"></div></div>
+      </div>
+      <div class="legend-note"><i></i>本期<em></em>对比期</div>
     </div>
 
-    <div class="main-layout" id="data-panel">
-        <div class="data-panel">
-            <div class="panel-header">供应商明细看板 (点击名称编辑)</div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>供应商名称</th><th>评级</th><th>入职数 (高职)</th>
-                        <th>加权分</th><th>已付费用</th><th>留存率</th>
-                        <th>单入职成本</th><th>过保留存成本</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <tr><td colspan="8" style="text-align: center; color: var(--text-tertiary); padding: 40px;">正在获取底层数据...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="insight-panel">
-            <div class="insight-card">
-                <div class="insight-title"><span>🎯</span> 管理动作建议</div>
-                <div class="insight-list" id="riskList">
-                    <div style="font-size: 13px; color: var(--text-tertiary); text-align: center; padding: 20px 0;">正在分析数据...</div>
-                </div>
-            </div>
-        </div>
+    <div class="panel w3">
+      <div class="ph"><h3>费用构成</h3><span class="ps">猎头费用 · 按职级</span></div>
+      <div class="chart" id="chartMix" style="height:206px"></div>
+      <div class="tfoot" id="mixNote"></div>
     </div>
 
-    <!-- 新增弹窗 -->
-    <div class="modal-overlay" id="addModal">
-        <div class="modal">
-            <div class="modal-title">录入新数据</div>
-            <form id="addForm">
-                <div class="form-grid">
-                    <div class="form-group full">
-                        <label>供应商名称 *</label>
-                        <input type="text" id="addName" required placeholder="例如：猎头A">
-                    </div>
-                    <div class="form-group">
-                        <label>评级</label>
-                        <select id="addGrade">
-                            <option value="A">A级 (核心)</option>
-                            <option value="B">B级 (稳定)</option>
-                            <option value="C">C级 (观察)</option>
-                            <option value="D">D级 (淘汰)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>已付费用 (万元)</label>
-                        <input type="number" step="0.1" id="addCost" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>入职总人数</label>
-                        <input type="number" id="addHires" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>高职级人数 (P5/M4+)</label>
-                        <input type="number" id="addHighHires" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>加权总分</label>
-                        <input type="number" step="0.1" id="addScore" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>保期留存率 (%)</label>
-                        <input type="number" step="0.1" id="addRetention" value="0" max="100">
-                    </div>
-                    <div class="form-group full">
-                        <label>备注/状态 (可选)</label>
-                        <input type="text" id="addStatus" placeholder="例如：健康运转">
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <a href="#" class="btn-secondary">取消</a>
-                    <button type="submit" class="btn-save" id="btnSaveAdd">保存数据</button>
-                </div>
-            </form>
-        </div>
+    <div class="panel w3">
+      <div class="ph"><h3>保期留存走势</h3><span class="ps">猎头渠道</span></div>
+      <div class="chart" id="chartRetTrend"></div>
     </div>
 
-    <!-- 编辑弹窗 -->
-    <div class="modal-overlay" id="editModal">
-        <div class="modal">
-            <div class="modal-title">更新供应商数据</div>
-            <form id="editForm">
-                <input type="hidden" id="editId">
-                <div class="form-grid">
-                    <div class="form-group full">
-                        <label>供应商名称 *</label>
-                        <input type="text" id="editName" required>
-                    </div>
-                    <div class="form-group">
-                        <label>评级</label>
-                        <select id="editGrade">
-                            <option value="A">A级 (核心)</option>
-                            <option value="B">B级 (稳定)</option>
-                            <option value="C">C级 (观察)</option>
-                            <option value="D">D级 (淘汰)</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>已付费用 (万元)</label>
-                        <input type="number" step="0.1" id="editCost">
-                    </div>
-                    <div class="form-group">
-                        <label>入职总人数</label>
-                        <input type="number" id="editHires">
-                    </div>
-                    <div class="form-group">
-                        <label>高职级人数 (P5/M4+)</label>
-                        <input type="number" id="editHighHires">
-                    </div>
-                    <div class="form-group">
-                        <label>加权总分</label>
-                        <input type="number" step="0.1" id="editScore">
-                    </div>
-                    <div class="form-group">
-                        <label>保期留存率 (%)</label>
-                        <input type="number" step="0.1" id="editRetention" max="100">
-                    </div>
-                    <div class="form-group full">
-                        <label>备注/状态 (可选)</label>
-                        <input type="text" id="editStatus">
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <a href="#" class="btn-secondary">取消</a>
-                    <button type="submit" class="btn-save" id="btnSaveEdit">保存修改</button>
-                </div>
-            </form>
+    <div class="panel w6">
+      <div class="ph"><h3>猎头供应商排名</h3><span class="ps" id="phRank">入职 ≥2 人参与排名 · 点击可看明细</span>
+        <div class="tools">
+          <button class="mini-btn on" data-rank="cost">单位成本</button>
+          <button class="mini-btn" data-rank="roi">ROI 倍数</button>
+          <button class="mini-btn" data-rank="ret">留存率</button>
         </div>
+      </div>
+      <div class="chart sm" id="chartRank"></div>
+      <div class="legend-note">颜色对应等级：<span style="color:#0E5A4E">S</span> / <span style="color:#3E8375">A</span> / <span style="color:#A97618">B</span> / <span style="color:#9AA7A2">C</span>　·　单位成本越低越靠上；切换右侧按钮可按 ROI 倍数或留存率排序</div>
+      <div class="detail" id="supDetail">
+        <h4 id="sdName">—</h4>
+        <div class="meta" id="sdMeta"></div>
+        <div class="dgrid" id="sdGrid"></div>
+        <div class="chart" id="sdTrend" style="height:130px"></div>
+      </div>
     </div>
 
-    <script>
-        // ==========================================
-        // 1. Supabase 凭证与初始化（改名 myDB 避免冲突）
-        // ==========================================
-        const SUPABASE_URL = 'https://dqqmfurqnvearnigikez.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_E4UqnalDjXJLBhDynDKmgg_72PhM1UR'; 
-        
-        let myDB;
-        try {
-            myDB = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        } catch(e) {
-            showError("无法初始化数据库，请检查凭证。");
+    <div class="panel w6">
+      <div class="ph"><h3>费用 vs 留存（气泡）</h3><span class="ps" id="phBubble">气泡大小 = 入职人数</span></div>
+      <div class="chart sm" id="chartBubble"></div>
+      <div class="legend-note">横轴：猎头费用（万元）· 纵轴：6 个月保期留存率 · 颜色：猎头等级（S / A / B / C）</div>
+    </div>
+
+    <div class="panel w5">
+      <div class="ph"><h3>猎头转化漏斗</h3><span class="ps">左：本期　右：对比期</span></div>
+      <div class="chart" id="chartFunnel" style="height:330px"></div>
+      <div class="tfoot" id="funnelNote"></div>
+    </div>
+
+    <div class="panel w7">
+      <div class="ph"><h3>分维度明细</h3>
+        <div class="tools">
+          <button class="mini-btn" data-dim="supplier">按猎头</button>
+          <button class="mini-btn" data-dim="grade">按等级</button>
+          <button class="mini-btn" data-dim="level">按职级</button>
+          <button class="mini-btn" data-dim="month">按月份</button>
+        </div>
+      </div>
+      <div class="tblwrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+      <div class="tfoot">仅统计猎头渠道。点击表头可排序，Δ 为费用变化率；对比期落在数据范围外时为空。</div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div>
+      <h4>指标口径</h4>
+      <p>单入职成本 = 费用 / 入职人数；到岗周期 = 空岗天数合计 / 入职人数；保期留存率 = 1 − 6 个月保期内流失 / 入职人数。以上各项均只取猎头渠道记录。</p>
+    </div>
+    <div>
+      <h4>空岗成本与 ROI</h4>
+      <p>空岗成本 = 空岗天数 × 日薪 × 1.35（含团队产出折损系数），日薪 = 年薪 / 365。ROI 倍数 = 空岗成本 / 猎头费用，≥1 表示填补该岗位减少的损失已覆盖猎头支出。</p>
+    </div>
+    <div>
+      <h4>对比规则</h4>
+      <p>同比 YoY 自动回退 12 个月（季 / 年粒度按对应档数回退）；环比 MoM 回退上一期；自定义可任选对比区间。对比期落在数据范围外时显示为空。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 录入弹层 ===== -->
+<div class="overlay" id="ovEntry" aria-hidden="true">
+  <div class="modal" role="dialog" aria-label="数据录入">
+    <div class="mhead"><h3>数据录入</h3><button class="mx" data-close="ovEntry" aria-label="关闭">×</button></div>
+    <div class="mtabs">
+      <button class="mtab on" data-tab="hire">入职人选</button>
+      <button class="mtab" data-tab="sup">猎头供应商</button>
+    </div>
+    <div class="mbody">
+      <div id="tabHire">
+        <div class="form">
+          <label>入职月份<select id="fMonth"></select></label>
+          <label>职级<select id="fLevel"></select></label>
+          <label>猎头供应商<select id="fSup"></select></label>
+          <label>固定税前年薪（万元）<input id="fSalary" type="number" min="1" step="0.1" placeholder="如 68"></label>
+          <label>费率<select id="fRate"><option value="0.2">20%</option><option value="0.22">22%（需审批）</option><option value="custom">自定义</option></select></label>
+          <label>服务费（万元）<input id="fFee" type="number" min="0" step="0.01" placeholder="按年薪 × 费率自动计算"></label>
+          <label>空岗天数<input id="fDays" type="number" min="0" step="1" value="45"></label>
+          <label class="cblabel"><input type="checkbox" id="fLost"> 6 个月保期内流失</label>
+          <label>备注<input id="fNote" type="text" placeholder="岗位名称 / 说明（可选）"></label>
+        </div>
+        <div class="mact">
+          <button class="primary" id="btnSaveHire">保存记录</button>
+          <span class="msgtip" id="hireMsg">保存后立即计入所有图表</span>
+        </div>
+        <div class="mlist">
+          <h4>已录入的入职记录</h4>
+          <table id="recList"><colgroup><col style="width:16%"><col style="width:16%"><col style="width:32%"><col style="width:16%"><col style="width:10%"><col style="width:10%"></colgroup>
+            <thead><tr><th>月份</th><th>职级</th><th>供应商</th><th>服务费</th><th>流失</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="tabSup" style="display:none">
+        <div class="form" style="grid-template-columns:1.6fr 0.8fr 1fr">
+          <label>供应商名称<input id="sName" type="text" placeholder="如 云策猎聘"></label>
+          <label>等级<select id="sGrade"><option>S</option><option>A</option><option>B</option><option>C</option></select></label>
+          <label>说明<input id="sNote" type="text" placeholder="专注领域 / 对接人（可选）"></label>
+        </div>
+        <div class="mact"><button class="primary" id="btnSaveSup">新增供应商</button><span class="msgtip" id="supMsg">新增后可在入职记录中选择</span></div>
+        <div class="mlist">
+          <h4>供应商名单</h4>
+          <table id="supList"><colgroup><col style="width:12%"><col style="width:44%"><col style="width:14%"><col style="width:14%"><col style="width:16%"></colgroup>
+            <thead><tr><th>编号</th><th>名称</th><th>等级</th><th>入职人数</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 数据源弹层 ===== -->
+<div class="overlay" id="ovCloud" aria-hidden="true">
+  <div class="modal" role="dialog" aria-label="数据源设置">
+    <div class="mhead"><h3>数据源 / Supabase</h3><button class="mx" data-close="ovCloud" aria-label="关闭">×</button></div>
+    <div class="mbody">
+      <div class="cfgrow"><span>Project URL</span><input id="cfgUrl" type="text" placeholder="https://xxxxxxxx.supabase.co"></div>
+      <div class="cfgrow"><span>anon public key</span><input id="cfgKey" type="text" placeholder="eyJhbGciOi...（Project Settings → API）"></div>
+      <div class="mact">
+        <button class="primary" id="btnConnect">测试并连接</button>
+        <button class="primary ghost" id="btnSyncNow">立即同步</button>
+        <button class="primary ghost" id="btnDisconnect">断开</button>
+        <button class="primary ghost" id="btnSql">下载建表 SQL</button>
+      </div>
+      <div class="msgtip" id="cloudMsg" style="margin-top:10px">未连接时数据保存在本机浏览器（localStorage），连接后改为线上实时读写。</div>
+      <div class="note-box">
+        <b>部署到 GitHub Pages</b><br>
+        1. 把 <code>猎头渠道ROI看板.html</code> 放到仓库根目录，可命名为 <code>index.html</code>；<br>
+        2. 仓库 Settings → Pages → Source 选 <code>main</code> 分支根目录，几分钟后得到 <code>https://用户名.github.io/仓库名/</code>；<br>
+        3. 打开页面点「数据源 / Supabase」，填入 URL 与 anon key 并连接，配置会保存在该浏览器。<br><br>
+        <b>Supabase 准备</b><br>
+        1. 新建项目后，在 SQL Editor 执行「下载建表 SQL」得到的脚本（含两张表与 RLS 策略）；<br>
+        2. anon key 是公开密钥，安全性由 RLS 控制；内部使用建议在 Dashboard 打开邮箱登录，并把 RLS 策略收紧到指定账号；<br>
+        3. 表名固定为 <code>hh_suppliers</code> 与 <code>hh_hires</code>，改动表结构需同步改页面。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============ 1. 基础配置 ============ */
+const COMPANIES=[
+  {id:0,name:'海底捞（中国）',scale:1.85}
+];
+const LEVELS=[
+  {id:'P4',name:'P4–P5 / T4–T5',salary:32,w:1.00},
+  {id:'P6',name:'P6–P7 / T6–T7',salary:68,w:0.52},
+  {id:'M2',name:'M2–M3',salary:105,w:0.28},
+  {id:'M4',name:'M4 及以上',salary:180,w:0.13}
+];
+const CHANNELS=[
+  {id:'hunter',name:'猎头',color:'#0E5A4E'},
+  {id:'referral',name:'内推',color:'#A97618'},
+  {id:'site',name:'官网直招',color:'#44637D'},
+  {id:'platform',name:'招聘平台',color:'#6B5477'}
+];
+const SUPPLIERS=[
+  {id:0,name:'H01 云策猎聘',grade:'S',strength:0.95},
+  {id:1,name:'H02 华锐人才',grade:'S',strength:0.80},
+  {id:2,name:'H03 明道咨询',grade:'A',strength:0.62},
+  {id:3,name:'H04 卓远人力',grade:'A',strength:0.58},
+  {id:4,name:'H05 禾丰顾问',grade:'A',strength:0.50},
+  {id:5,name:'H06 泰合英才',grade:'B',strength:0.34},
+  {id:6,name:'H07 尚贤猎头',grade:'B',strength:0.30},
+  {id:7,name:'H08 立行人才',grade:'B',strength:0.26},
+  {id:8,name:'H09 恒信顾问',grade:'C',strength:0.16}
+];
+const GRADES=['S','A','B','C'];
+const BASE_SUPPLIERS=SUPPLIERS.slice();
+const GRADE_COLOR={S:'#0E5A4E',A:'#3E8375',B:'#A97618',C:'#9AA7A2'};
+const CMP_COLOR='#9AA7A2';
+
+/* ============ 2. 时间轴 ============ */
+const MONTHS=[]; // {key:'2024-01', y, m}
+(function(){for(let y=2024;y<=2026;y++){for(let m=1;m<=12;m++){if(y===2026&&m>10)continue;MONTHS.push({key:y+'-'+String(m).padStart(2,'0'),y,m,idx:MONTHS.length});}}})();
+const MIDX=k=>MONTHS.findIndex(x=>x.key===k);
+
+/* ============ 3. 示例数据生成（确定性种子） ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const RND=mulberry32(20261117);
+const RECORDS=[];
+(function build(){
+  const n=MONTHS.length;
+  for(const c of COMPANIES){
+    for(let mi=0;mi<n;mi++){
+      const mon=MONTHS[mi].m;
+      const season=1+0.28*Math.sin((mon-1)/12*2*Math.PI)+((mon===2||mon===3)?0.30:((mon===11||mon===12)?-0.12:0));
+      const trend=1+mi*0.010;
+      for(const ch of CHANNELS){
+        const chScale={hunter:1.0,referral:1.65,site:0.85,platform:0.75}[ch.id];
+        for(let li=0;li<LEVELS.length;li++){
+          const base=c.scale*LEVELS[li].w*chScale*season*trend*1.9;
+          if(ch.id==='hunter'){
+            let totalHires=Math.max(0,Math.round(base*(0.7+RND()*0.9)));
+            if(totalHires===0) continue;
+            const weights=SUPPLIERS.map(s=>s.strength*(0.7+RND()*0.7));
+            const wsum=weights.reduce((a,b)=>a+b,0);
+            const counts=new Array(SUPPLIERS.length).fill(0);
+            for(let k=0;k<totalHires;k++){
+              let pickR=RND()*wsum,acc=0,picked=SUPPLIERS.length-1;
+              for(let si=0;si<SUPPLIERS.length;si++){acc+=weights[si];if(pickR<=acc){picked=si;break;}}
+              counts[picked]++;
+            }
+            counts.forEach((h,si)=>{ if(h>0) RECORDS.push(makeRec(c.id,mi,ch.id,li,si,h)); });
+          }else{
+            const h=Math.max(0,Math.round(base*(0.9+RND()*1.3)));
+            if(h<=0) continue;
+            RECORDS.push(makeRec(c.id,mi,ch.id,li,-1,h));
+          }
         }
+      }
+    }
+  }
+})();
+function makeRec(c,mi,ch,li,sup,h){
+  const offer=Math.max(h,Math.round(h/(0.70+RND()*0.13)));
+  const interview=Math.max(offer,Math.round(offer/(0.54+RND()*0.14)));
+  const valid=Math.max(interview,Math.round(interview/(0.48+RND()*0.14)));
+  const refer=Math.max(valid,Math.round(valid/(0.36+RND()*0.14)));
+  const salary=LEVELS[li].salary;
+  let cost;
+  if(ch==='hunter'){
+    const grade=sup>=0?SUPPLIERS[sup].grade:'A';
+    const rate=(grade==='S'||grade==='A')&&RND()<0.42?0.22:0.20;
+    cost=h*salary*rate;
+  }else if(ch==='referral'){ cost=h*(2.0+RND()*0.6); }
+  else if(ch==='site'){ cost=h*(1.1+RND()*0.5); }
+  else { cost=h*(3.0+RND()*1.2); }
+  cost=cost*(0.94+RND()*0.12);
+  const lossRate={hunter:0.06+RND()*0.10,referral:0.02+RND()*0.05,site:0.09+RND()*0.10,platform:0.07+RND()*0.09}[ch];
+  const loss=Math.round(h*lossRate*10)/10;
+  const perDays={hunter:44+RND()*22,referral:26+RND()*14,site:52+RND()*26,platform:47+RND()*22}[ch];
+  return {c,mi,ch,li,sup,cost,refer,valid,interview,offer,hires:h,loss,days:h*perDays};
+}
 
-        const tableBody = document.getElementById('tableBody');
-        const riskList = document.getElementById('riskList');
-        const alertStrip = document.getElementById('alertStrip');
-        const alertMessage = document.getElementById('alertMessage');
 
-        function showError(msg) {
-            document.getElementById('errorBanner').style.display = 'block';
-            document.getElementById('errorMessage').innerText = msg;
-        }
+/* ============ 3.5 数据层：手动录入 / 本地存储 / Supabase ============ */
+const K={recs:'hhroi.recs.v1',sups:'hhroi.sups.v1',cfg:'hhroi.cfg.v1'};
+let USER_RECS=[], USER_SUPS=[], RECS=[];
+const CLOUD={url:'',key:'',client:null,connected:false,chan:null,tsup:'hh_suppliers',thire:'hh_hires'};
+const CH_LABEL={hunter:'猎头',referral:'内推',site:'官网直招',platform:'招聘平台'};
 
-        async function fetchData() {
-            if(!myDB) return;
-            try {
-                const { data, error } = await myDB.from('hunter_suppliers').select('*').order('weighted_score', { ascending: false });
-                if (error) throw error;
-                renderUI(data);
-            } catch (err) {
-                console.error(err);
-                showError(err.message || "拉取数据失败，请确认表名 hunter_suppliers 是否正确。");
-                tableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--accent-red); padding: 40px;">读取失败，请看页面顶部提示。</td></tr>`;
-            }
-        }
+function loadLocal(){
+  try{
+    USER_RECS=JSON.parse(localStorage.getItem(K.recs)||'[]')||[];
+    USER_SUPS=JSON.parse(localStorage.getItem(K.sups)||'[]')||[];
+    const cfg=JSON.parse(localStorage.getItem(K.cfg)||'{}');
+    CLOUD.url=cfg.url||''; CLOUD.key=cfg.key||'';
+  }catch(e){USER_RECS=[];USER_SUPS=[];}
+  applyUserSuppliers();
+  rebuildRecs();
+}
+function persistLocal(){
+  try{
+    localStorage.setItem(K.recs,JSON.stringify(USER_RECS));
+    localStorage.setItem(K.sups,JSON.stringify(USER_SUPS));
+    localStorage.setItem(K.cfg,JSON.stringify({url:CLOUD.url,key:CLOUD.key}));
+  }catch(e){}
+}
+function resetSuppliers(){
+  SUPPLIERS.length=0;
+  BASE_SUPPLIERS.forEach(x=>SUPPLIERS.push(Object.assign({},x)));
+  applyUserSuppliers();
+}
+function applyUserSuppliers(){
+  USER_SUPS.forEach(u=>{
+    if(!SUPPLIERS.some(s=>String(s.id)===String(u.id)))
+      SUPPLIERS.push({id:u.id,name:u.name,grade:u.grade,strength:0,manual:true});
+  });
+}
+function nextSupId(){
+  let m=99;
+  SUPPLIERS.forEach(s=>{if(+s.id>m)m=+s.id;});
+  USER_SUPS.forEach(s=>{if(+s.id>m)m=+s.id;});
+  return m+1;
+}
+function recFromUser(u){
+  const mi=MIDX(u.month);
+  const li=LEVELS.findIndex(l=>l.id===u.level);
+  let sup=-1;
+  if(u.channel==='hunter'&&u.supplier!=null)sup=SUPPLIERS.findIndex(s=>String(s.id)===String(u.supplier));
+  return {c:0,mi:mi>=0?mi:MONTHS.length-1,ch:u.channel,li:li<0?0:li,sup:sup,
+    salary:+u.salary||LEVELS[li<0?0:li].salary,cost:+u.fee||0,
+    refer:1,valid:1,interview:1,offer:1,hires:1,loss:u.lost?1:0,days:+u.days||0,manual:true};
+}
+function rebuildRecs(){
+  const demo=S.demo?RECORDS:[];
+  RECS=demo.concat(USER_RECS.map(recFromUser));
+}
 
-        function renderUI(data) {
-            let totalCost = 0, totalHires = 0, highHires = 0, totalScore = 0, retentionSum = 0;
-            data.forEach(item => {
-                totalCost += Number(item.total_cost);
-                totalHires += Number(item.total_hires);
-                highHires += Number(item.high_level_hires);
-                totalScore += Number(item.weighted_score);
-                retentionSum += (Number(item.retention_rate) * Number(item.total_hires));
-            });
+/* ---- Supabase ---- */
+function loadSb(cb){
+  if(window.supabase)return cb(null);
+  const sc=document.createElement('script');
+  sc.src='https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+  sc.onload=()=>cb(null);
+  sc.onerror=()=>cb(new Error('supabase-js 加载失败，请检查网络'));
+  document.head.appendChild(sc);
+}
+function dbConnect(url,key){
+  return new Promise((resolve,reject)=>{
+    let done=false;
+    const finish=(fn,v)=>{if(done)return;done=true;clearTimeout(timer);fn(v);};
+    const timer=setTimeout(()=>finish(reject,new Error('连接超时（20 秒）：请检查 Project URL 是否正确、项目是否被暂停、网络是否可达')),20000);
+    loadSb(async err=>{
+      if(err)return finish(reject,err);
+      try{
+        const c=window.supabase.createClient(url,key);
+        const probe=await c.from(CLOUD.tsup).select('id').limit(1);
+        if(probe.error)throw new Error(probe.error.message+'（请确认已执行建表 SQL，且 RLS 允许 anon 读取）');
+        CLOUD.client=c; CLOUD.url=url; CLOUD.key=key; CLOUD.connected=true;
+        finish(resolve,true);
+      }catch(e){finish(reject,e);}
+    });
+  });
+}
+async function dbPull(){
+  if(!CLOUD.client)return;
+  const [sr,hr]=await Promise.all([
+    CLOUD.client.from(CLOUD.tsup).select('*').order('id',{ascending:true}),
+    CLOUD.client.from(CLOUD.thire).select('*').order('hire_month',{ascending:true})
+  ]);
+  if(sr.error)throw sr.error;
+  if(hr.error)throw hr.error;
+  SUPPLIERS.length=0;
+  (sr.data||[]).forEach((r,i)=>SUPPLIERS.push({id:i,name:r.name,grade:r.grade,strength:0,dbId:r.id,db:true}));
+  USER_RECS=(hr.data||[]).map(r=>{
+    const idx=SUPPLIERS.findIndex(x=>x.dbId===r.supplier_id);
+    return {id:r.id,month:r.hire_month,level:r.level,channel:r.channel,
+      supplier:idx>=0?SUPPLIERS[idx].id:null,salary:+r.annual_salary,fee:+r.fee,
+      days:+(r.vacancy_days||0),lost:!!r.lost,note:r.note||'',db:true};
+  });
+  USER_SUPS=[];
+  rebuildRecs();
+  updateStamp();
+}
+async function dbInsertHire(u){
+  const supIdx=u.channel==='hunter'&&u.supplier!=null?SUPPLIERS.findIndex(s=>String(s.id)===String(u.supplier)):-1;
+  const supplier_id=supIdx>=0?(SUPPLIERS[supIdx].dbId!=null?SUPPLIERS[supIdx].dbId:null):null;
+  const {error}=await CLOUD.client.from(CLOUD.thire).insert({
+    hire_month:u.month,level:u.level,channel:u.channel,supplier_id,
+    annual_salary:u.salary,fee:u.fee,vacancy_days:u.days,lost:u.lost,note:u.note||null
+  });
+  if(error)throw error;
+}
+async function dbInsertSup(name,grade){
+  const {error}=await CLOUD.client.from(CLOUD.tsup).insert({name,grade});
+  if(error)throw error;
+}
+async function dbDeleteHire(id){ if(!CLOUD.client)return; const {error}=await CLOUD.client.from(CLOUD.thire).delete().eq('id',id); if(error)throw error; }
+async function dbDeleteSup(dbId){ if(!CLOUD.client)return; const {error}=await CLOUD.client.from(CLOUD.tsup).delete().eq('id',dbId); if(error)throw error; }
+function dbWatch(onChange){
+  if(!CLOUD.client)return;
+  if(CLOUD.chan){CLOUD.client.removeChannel(CLOUD.chan);CLOUD.chan=null;}
+  let timer=null;
+  const bump=()=>{clearTimeout(timer);timer=setTimeout(onChange,400);};
+  CLOUD.chan=CLOUD.client.channel('hhroi-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:CLOUD.thire},bump)
+    .on('postgres_changes',{event:'*',schema:'public',table:CLOUD.tsup},bump)
+    .subscribe();
+}
 
-            document.getElementById('kpi-total-cost').innerText = `¥${totalCost.toFixed(1)}`;
-            document.getElementById('kpi-total-hires').innerText = `${totalHires}`;
-            document.getElementById('kpi-high-hires').innerText = `高职级占比 ${totalHires > 0 ? ((highHires/totalHires)*100).toFixed(1) : 0}%`;
-            document.getElementById('kpi-total-score').innerText = `${totalScore.toFixed(1)}`;
-            
-            const overallRet = totalHires === 0 ? 0 : (retentionSum / totalHires);
-            const retEl = document.getElementById('kpi-retention');
-            const retHintEl = document.getElementById('kpi-retention-hint');
-            retEl.innerText = `${overallRet.toFixed(1)}%`;
-            
-            if (overallRet < 60) {
-                retEl.style.color = 'var(--accent-red)';
-                retHintEl.innerText = '已跌破 60% 红线';
-                retHintEl.className = 'kpi-sub danger';
-            } else {
-                retEl.style.color = 'var(--text-primary)';
-                retHintEl.innerText = '红线健康值 ≥ 60%';
-                retHintEl.className = 'kpi-sub';
-            }
+/* ---- 提示条 ---- */
+let toastTimer=null;
+function toast(msg,type){
+  let el=document.getElementById('toast');
+  if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el);}
+  el.className='toast show '+(type||'');
+  el.textContent=msg;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{el.className='toast';},2600);
+}
+function updateStamp(){
+  const el=document.getElementById('dataStamp');
+  if(!el)return;
+  if(CLOUD.connected)el.textContent='Supabase 已连接 · 实时同步';
+  else el.textContent='本地存储 · 未连接数据库';
+}
 
-            let html = '';
-            let riskySuppliers = [];
+/* ============ 4. 状态与筛选 ============ */
+const S={
+  companies:new Set([0]),
+  demo:true,
+  levels:new Set(LEVELS.map((_,i)=>i)),
+  grades:new Set(GRADES.slice()),
+  gran:'month',
+  start:MIDX('2025-11'),
+  end:MIDX('2026-10'),
+  cmp:'yoy',
+  cmpStart:MIDX('2024-11'),
+  cmpEnd:MIDX('2025-10'),
+  dim:'supplier',
+  rankMetric:'cost',
+  activeSupplier:null
+};
 
-            data.forEach(item => {
-                const perHireCost = item.total_hires > 0 ? (item.total_cost / item.total_hires).toFixed(1) : '0.0';
-                const perRetentionCost = (item.total_hires > 0 && item.retention_rate > 0) 
-                    ? (item.total_cost / (item.total_hires * (item.retention_rate / 100))).toFixed(1) : '0.0';
-                
-                const isDanger = item.retention_rate < 60;
-                if (isDanger) riskySuppliers.push(item);
+function pass(r){
+  if(!S.companies.has(r.c))return false;
+  if(!S.levels.has(r.li))return false;
+  if(r.ch==='hunter'&&r.sup>=0&&SUPPLIERS[r.sup]&&!S.grades.has(SUPPLIERS[r.sup].grade))return false;
+  return true;
+}
+function agg(from,to,pred){
+  const a={cost:0,refer:0,valid:0,interview:0,offer:0,hires:0,loss:0,days:0,vac:0,byCh:{},byLv:{},bySup:{}};
+  for(const r of RECS){
+    if(r.mi<from||r.mi>to)continue;
+    if(!pass(r))continue;
+    if(pred&&!pred(r))continue;
+    const sal=r.salary||LEVELS[r.li].salary;
+    const vac=r.days*sal/365*1.35;
+    a.cost+=r.cost;a.refer+=r.refer;a.valid+=r.valid;a.interview+=r.interview;a.offer+=r.offer;
+    a.hires+=r.hires;a.loss+=r.loss;a.days+=r.days;a.vac+=vac;
+    push(a.byCh,r.ch,r,vac);push(a.byLv,r.li,r,vac);
+    if(r.ch==='hunter'&&r.sup>=0&&SUPPLIERS[r.sup])push(a.bySup,r.sup,r,vac);
+  }
+  return a;
+}
+function push(bucket,key,r,vac){
+  if(!bucket[key])bucket[key]={cost:0,refer:0,valid:0,interview:0,offer:0,hires:0,loss:0,days:0,vac:0};
+  const b=bucket[key];
+  b.cost+=r.cost;b.refer+=r.refer;b.valid+=r.valid;b.interview+=r.interview;b.offer+=r.offer;
+  b.hires+=r.hires;b.loss+=r.loss;b.days+=r.days;b.vac+=vac;
+}
+function derive(a){
+  const h=a.hires;
+  return Object.assign(a,{
+    unit:h?a.cost/h:null,
+    cyc:h?a.days/h:null,
+    ret:h?1-a.loss/h:null,
+    roi:a.cost?a.vac/a.cost:null,
+    offerRate:a.offer?h/a.offer:null
+  });
+}
 
-                html += `
-                    <tr class="${isDanger ? 'row-danger' : ''}">
-                        <td>
-                            <a href="#editModal" onclick="fillEditForm('${item.id}')" style="font-weight: 600; font-size: 15px; text-decoration: none; color: inherit;">${item.name}</a>
-                            ${isDanger ? '<span class="alert-pill">需干预</span>' : ''}
-                        </td>
-                        <td><span class="tag-grade grade-${item.grade.toLowerCase()}">${item.grade}</span></td>
-                        <td>${item.total_hires} <span style="color:var(--text-tertiary); font-size:12px;">(${item.high_level_hires})</span></td>
-                        <td>${item.weighted_score}</td>
-                        <td>¥${item.total_cost}</td>
-                        <td><span style="font-weight: 600; color:${isDanger ? 'var(--accent-red)' : 'var(--text-primary)'}">${item.retention_rate}%</span></td>
-                        <td>¥${perHireCost}</td>
-                        <td>${perRetentionCost > 20 ? `<span style="color:var(--accent-orange)">¥${perRetentionCost}</span>` : `¥${perRetentionCost}`}</td>
-                    </tr>
-                `;
-            });
-            tableBody.innerHTML = html;
+/* ============ 5. 分桶 ============ */
+function qKey(i){const y=MONTHS[i].y;return y+'Q'+(Math.floor((MONTHS[i].m-1)/3)+1);}
+function buckets(from,to){
+  const out=[];
+  if(S.gran==='month'){
+    for(let i=from;i<=to;i++)out.push({label:MONTHS[i].key,from:i,to:i});
+  }else if(S.gran==='quarter'){
+    let cur=null;
+    for(let i=from;i<=to;i++){
+      const k=qKey(i);
+      if(!cur||cur.label!==k){cur={label:k,from:i,to:i};out.push(cur);}
+      else cur.to=i;
+    }
+  }else{
+    let cur=null;
+    for(let i=from;i<=to;i++){
+      const k=String(MONTHS[i].y);
+      if(!cur||cur.label!==k){cur={label:k,from:i,to:i};out.push(cur);}
+      else cur.to=i;
+    }
+  }
+  return out;
+}
+function seriesBuckets(list,pred){
+  const out={labels:[],vals:[]};
+  for(const b of list){
+    const a=derive(agg(b.from,b.to,pred));
+    out.labels.push(b.label);
+    out.vals.push(a);
+  }
+  return out;
+}
+function shiftOf(){
+  if(S.cmp==='yoy')return S.gran==='month'?12:(S.gran==='quarter'?12:12);
+  if(S.cmp==='mom')return S.gran==='month'?1:(S.gran==='quarter'?3:12);
+  return 0;
+}
+function cmpRange(){
+  if(S.cmp==='custom')return [Math.min(S.cmpStart,S.cmpEnd),Math.max(S.cmpStart,S.cmpEnd)];
+  const sh=shiftOf();
+  if(S.cmp==='yoy'){
+    // 同比：回退一整年（12 个月），无论粒度
+    return [S.start-12,S.end-12];
+  }
+  return [S.start-sh,S.end-sh];
+}
+function validRange(from,to){return from>=0&&to<MONTHS.length&&from<=to;}
 
-            if (riskySuppliers.length > 0) {
-                alertStrip.classList.add('show');
-                alertMessage.innerHTML = `监测到 <strong>${riskySuppliers.length}</strong> 家供应商留存率跌破 60%。`;
-                
-                let riskHtml = '';
-                riskySuppliers.forEach(r => {
-                    riskHtml += `
-                        <div class="insight-item risk">
-                            <div class="item-name">
-                                <span>${r.name}</span>
-                                <span class="tag-grade grade-${r.grade.toLowerCase()}" style="width:20px; height:20px; font-size:10px;">${r.grade}</span>
-                            </div>
-                            <div class="item-reason">留存率 ${r.retention_rate}%，低于 60% 红线。</div>
-                            <a href="#editModal" onclick="fillEditForm('${r.id}')" class="item-action">去复核数据 / 发起整改 →</a>
-                        </div>
-                    `;
-                });
-                riskList.innerHTML = riskHtml;
-            } else {
-                alertStrip.classList.remove('show');
-                riskList.innerHTML = `<div style="font-size: 13px; color: var(--accent-green); text-align: center; padding: 20px 0;">✨ 所有供应商指标均健康</div>`;
-            }
-        }
+/* ============ 6. 格式化 ============ */
+const W=n=>(n==null?'—':(n>=100?Math.round(n):n.toFixed(1))+'');
+const P=n=>(n==null?'—':(n*100).toFixed(1)+'%');
+const NUM=n=>(n==null?'—':Math.round(n).toLocaleString('zh-CN'));
+const D=n=>(n==null?'—':n.toFixed(1)+' 天');
+function delta(cur,prev){
+  if(cur==null||prev==null||prev===0)return null;
+  return (cur-prev)/Math.abs(prev);
+}
+function deltaText(d){
+  if(d==null)return '对比期无数据';
+  const s=(d*100).toFixed(1)+'%';
+  return (d>0?'+':'')+s;
+}
 
-        window.fillEditForm = async (id) => {
-            if(!myDB) return;
-            try {
-                const { data, error } = await myDB.from('hunter_suppliers').select('*').eq('id', id).single();
-                if (error) throw error;
-                document.getElementById('editId').value = data.id;
-                document.getElementById('editName').value = data.name;
-                document.getElementById('editGrade').value = data.grade;
-                document.getElementById('editCost').value = data.total_cost;
-                document.getElementById('editHires').value = data.total_hires;
-                document.getElementById('editHighHires').value = data.high_level_hires;
-                document.getElementById('editScore').value = data.weighted_score;
-                document.getElementById('editRetention').value = data.retention_rate;
-                document.getElementById('editStatus').value = data.status;
-            } catch (err) {
-                console.error(err);
-                alert("获取详情失败，请重试。");
-            }
-        };
+/* ============ 7. 图表公共配置 ============ */
+const CHARTS={};
+const AXL={axisLine:{lineStyle:{color:'#C9D1CA'}},axisTick:{show:false},axisLabel:{color:'#798581',fontSize:11},splitLine:{show:false},axisPointer:{lineStyle:{color:'#C9D1CA'}}};
+const AXV=Object.assign({},AXL,{splitLine:{show:true,lineStyle:{color:'#EDF0EB'}}});
+function tipAxis(fmt){
+  return {trigger:'axis',confine:true,backgroundColor:'#fff',borderColor:'#BFC7C0',borderWidth:1,padding:[7,10],
+    textStyle:{color:'#14201D',fontSize:12},extraCssText:'box-shadow:none',axisPointer:{type:'shadow',shadowStyle:{color:'rgba(14,90,78,0.05)'}},formatter:fmt};
+}
+function tipItem(fmt){
+  return {trigger:'item',confine:true,backgroundColor:'#fff',borderColor:'#BFC7C0',borderWidth:1,padding:[7,10],
+    textStyle:{color:'#14201D',fontSize:12},extraCssText:'box-shadow:none',formatter:fmt};
+}
+function initCharts(){
+  if(!window.echarts){document.querySelectorAll('.chart').forEach(el=>{el.innerHTML='<div class="empty">图表库未能加载，请联网后刷新</div>';});return;}
+  ['chartCost','chartHire','cUnitCost','cDays','cRet','chartMix','chartRetTrend','chartRank','chartBubble','chartFunnel','sdTrend'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!CHARTS[id])CHARTS[id]=echarts.init(el);
+  });
+}
+window.addEventListener('resize',()=>{Object.values(CHARTS).forEach(c=>c.resize());});
 
-        document.getElementById('addForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!myDB) return alert("数据库未连接");
-            const payload = {
-                name: document.getElementById('addName').value,
-                grade: document.getElementById('addGrade').value,
-                total_cost: parseFloat(document.getElementById('addCost').value) || 0,
-                total_hires: parseInt(document.getElementById('addHires').value) || 0,
-                high_level_hires: parseInt(document.getElementById('addHighHires').value) || 0,
-                weighted_score: parseFloat(document.getElementById('addScore').value) || 0,
-                retention_rate: parseFloat(document.getElementById('addRetention').value) || 0,
-                status: document.getElementById('addStatus').value
-            };
-            const { error } = await myDB.from('hunter_suppliers').insert([payload]);
-            if(error) {
-                alert("保存失败: " + error.message);
-            } else {
-                window.location.hash = ''; 
-                fetchData();
-            }
-        });
+/* ============ 8. 筛选控件 ============ */
+function buildControls(){
+  const lc=document.getElementById('levelChips');
+  lc.innerHTML=LEVELS.map((l,i)=>`<button class="chip on" data-l="${i}">${l.name}</button>`).join('');
+  const gc=document.getElementById('gradeChips');
+  gc.innerHTML=GRADES.map(g=>`<button class="chip on" data-g="${g}">${g} 级</button>`).join('');
 
-        document.getElementById('editForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!myDB) return alert("数据库未连接");
-            const id = document.getElementById('editId').value;
-            const payload = {
-                name: document.getElementById('editName').value,
-                grade: document.getElementById('editGrade').value,
-                total_cost: parseFloat(document.getElementById('editCost').value) || 0,
-                total_hires: parseInt(document.getElementById('editHires').value) || 0,
-                high_level_hires: parseInt(document.getElementById('editHighHires').value) || 0,
-                weighted_score: parseFloat(document.getElementById('editScore').value) || 0,
-                retention_rate: parseFloat(document.getElementById('editRetention').value) || 0,
-                status: document.getElementById('editStatus').value
-            };
-            const { error } = await myDB.from('hunter_suppliers').update(payload).eq('id', id);
-            if(error) {
-                alert("修改失败: " + error.message);
-            } else {
-                window.location.hash = ''; 
-                fetchData();
-            }
-        });
+  const mk=(sel,val)=>{
+    sel.innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m.key}</option>`).join('');
+    sel.value=val;
+  };
+  mk(document.getElementById('startSel'),S.start);
+  mk(document.getElementById('endSel'),S.end);
+  mk(document.getElementById('cmpStartSel'),S.cmpStart);
+  mk(document.getElementById('cmpEndSel'),S.cmpEnd);
 
-        fetchData();
-    </script>
+  document.getElementById('dataScope').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.v==='demo'&&CLOUD.connected){toast('已连接数据库，示例数据已隐藏','warn');return;}
+    [...e.currentTarget.children].forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    S.demo=b.dataset.v==='demo';
+    rebuildRecs();render();updateScopeHint();
+  });
+  lc.addEventListener('click',e=>{
+    const b=e.target.closest('.chip');if(!b)return;
+    const id=+b.dataset.l;
+    if(S.levels.has(id))S.levels.delete(id);else S.levels.add(id);
+    if(!S.levels.size)S.levels.add(id);
+    syncChipState();render();
+  });
+  gc.addEventListener('click',e=>{
+    const b=e.target.closest('.chip');if(!b)return;
+    const g=b.dataset.g;
+    if(S.grades.has(g))S.grades.delete(g);else S.grades.add(g);
+    if(!S.grades.size)S.grades.add(g);
+    syncChipState();render();
+  });
+
+  document.getElementById('granularity').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    [...e.currentTarget.children].forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');S.gran=b.dataset.v;render();
+  });
+  document.getElementById('cmpMode').addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b)return;
+    [...e.currentTarget.children].forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');S.cmp=b.dataset.v;
+    document.getElementById('cmpBox').style.display=b.dataset.v==='custom'?'inline':'none';
+    render();
+  });
+  document.getElementById('startSel').addEventListener('change',e=>{
+    S.start=+e.target.value;if(S.end<S.start){S.end=S.start;document.getElementById('endSel').value=S.end;}
+    render();
+  });
+  document.getElementById('endSel').addEventListener('change',e=>{S.end=+e.target.value;if(S.end<S.start){S.start=S.end;document.getElementById('startSel').value=S.start;}render();});
+  document.getElementById('cmpStartSel').addEventListener('change',e=>{S.cmpStart=+e.target.value;render();});
+  document.getElementById('cmpEndSel').addEventListener('change',e=>{S.cmpEnd=+e.target.value;render();});
+  document.getElementById('btnReset').addEventListener('click',()=>{
+    S.companies=new Set(COMPANIES.map(c=>c.id));
+    S.levels=new Set(LEVELS.map((_,i)=>i));
+    S.grades=new Set(GRADES.slice());
+    S.gran='month';S.cmp='yoy';S.start=MIDX('2025-11');S.end=MIDX('2026-10');
+    document.querySelectorAll('#granularity button').forEach(b=>b.classList.toggle('on',b.dataset.v==='month'));
+    document.querySelectorAll('#cmpMode button').forEach(b=>b.classList.toggle('on',b.dataset.v==='yoy'));
+    document.getElementById('cmpBox').style.display='none';
+    document.getElementById('startSel').value=S.start;
+    document.getElementById('endSel').value=S.end;
+    S.activeSupplier=null;document.getElementById('supDetail').classList.remove('show');
+    syncChipState();render();
+  });
+  document.getElementById('btnExport').addEventListener('click',exportCSV);
+  document.querySelectorAll('.mini-btn[data-dim]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.mini-btn[data-dim]').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');S.dim=b.dataset.dim;render();
+    });
+  });
+  document.querySelectorAll('.mini-btn[data-rank]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('.mini-btn[data-rank]').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');S.rankMetric=b.dataset.rank;render();
+    });
+  });
+}
+function updateScopeHint(){
+  const h=document.getElementById('scopeHint');if(!h)return;
+  h.textContent=CLOUD.connected?'当前：Supabase 线上数据（实时同步）':(S.demo?'当前：示例历史数据 + 手动录入记录':'当前：仅手动录入记录');
+  document.querySelectorAll('#dataScope button').forEach(b=>{
+    b.classList.toggle('on',b.dataset.v===(S.demo?'demo':'real'));
+    if(b.dataset.v==='demo')b.style.opacity=CLOUD.connected?'.45':'1';
+  });
+}
+function syncChipState(){
+  document.querySelectorAll('#levelChips .chip').forEach(b=>b.classList.toggle('on',S.levels.has(+b.dataset.l)));
+  document.querySelectorAll('#gradeChips .chip').forEach(b=>b.classList.toggle('on',S.grades.has(b.dataset.g)));
+}
+
+/* ============ 9. KPI ============ */
+function sparkSVG(vals,color){
+  const vs=vals.filter(v=>v!=null);
+  if(vs.length<2)return '';
+  const w=64,h=22,min=Math.min.apply(null,vs),max=Math.max.apply(null,vs),span=(max-min)||1;
+  const pts=vs.map((v,i)=>((i/(vs.length-1))*w).toFixed(1)+','+(h-2-((v-min)/span)*(h-4)).toFixed(1)).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+}
+function kpiCard(label,value,unit,d,spark,goodUp){
+  const up=d!=null&&d>0;
+  const cls=d==null?'':((up===goodUp)?'pos':'neg');
+  const arrow=d==null?'':(up?'▲ ':'▼ ');
+  return `<div class="kpi">${spark||''}
+    <div class="k">${label}</div>
+    <div class="v">${value}${unit?`<u>${unit}</u>`:''}</div>
+    <div class="d"><b class="${cls}">${arrow}${deltaText(d)}</b><span class="lab">较对比期</span></div>
+  </div>`;
+}
+function drawKPI(cur,prev,curAll,prevAll,series){
+  const el=document.getElementById('kpis');
+  const d=(a,b)=>prev&&b?delta(a,b):null;
+  el.innerHTML=[
+    kpiCard('猎头费用',W(cur.cost),'万元',d(cur.cost,prev&&prev.cost),sparkSVG(series.cost,'#0E5A4E'),false),
+    kpiCard('猎头入职',NUM(cur.hires),'人',d(cur.hires,prev&&prev.hires),sparkSVG(series.hires,'#0E5A4E'),true),
+    kpiCard('猎头单入职成本',W(cur.unit),'万元/人',d(cur.unit,prev&&prev.unit),null,false),
+    kpiCard('猎头保期留存率',P(cur.ret),'',d(cur.ret,prev&&prev.ret),sparkSVG(series.ret.map(v=>v==null?null:v*100),'#0E5A4E'),true),
+    kpiCard('平均到岗周期',cur.cyc==null?'—':Math.round(cur.cyc),'天',d(cur.cyc,prev&&prev.cyc),null,false),
+    kpiCard('猎头 ROI 倍数',cur.roi==null?'—':cur.roi.toFixed(2),'×',d(cur.roi,prev&&prev.roi),null,true)
+  ].join('');
+}
+
+/* ============ 10. 趋势图 ============ */
+let lastBuckets=null;
+function drawTrend(labels,curVals,prevVals,type,chartId,unitFmt,pred){
+  const c=CHARTS[chartId];if(!c)return;
+  const cur=pred?curVals.map(pred):curVals;
+  const prev=prevVals?(pred?prevVals.map(v=>v==null?null:pred(v)):prevVals):null;
+  const series=[];
+  if(type==='line'){
+    series.push({name:'本期',type:'line',data:cur,symbol:'circle',symbolSize:5,lineStyle:{width:2,color:'#0E5A4E'},itemStyle:{color:'#0E5A4E'},areaStyle:{color:'rgba(14,90,78,0.06)'},z:3});
+    if(prev)series.push({name:'对比期',type:'line',data:prev,symbol:'none',lineStyle:{width:1.5,color:CMP_COLOR,type:'dashed'},itemStyle:{color:CMP_COLOR},z:2});
+  }else{
+    series.push({name:'本期',type:'bar',data:cur,barWidth:'42%',itemStyle:{color:'#0E5A4E'},z:3});
+    if(prev)series.push({name:'对比期',type:'bar',data:prev,barWidth:'42%',itemStyle:{color:'#CBD5CF'},z:2});
+  }
+  c.setOption({
+    grid:{left:6,right:28,top:26,bottom:6,containLabel:true},
+    tooltip:tipAxis(ps=>{
+      let s=ps[0].axisValue+'<br/>';
+      ps.forEach(p=>{s+=`${p.marker}${p.seriesName}：<b>${unitFmt(p.value)}</b><br/>`;});
+      return s;
+    }),
+    xAxis:Object.assign({},AXL,{type:'category',data:labels,boundaryGap:type==='bar',axisLabel:Object.assign({},AXL.axisLabel,{hideOverlap:true})}),
+    yAxis:Object.assign({},AXV,{type:'value',axisLabel:Object.assign({},AXL.axisLabel,{formatter:v=>unitFmt(v)})}),
+    series:series
+  },true);
+  if(!c.__bound){
+    c.on('click',p=>{
+      if(!lastBuckets)return;
+      const b=lastBuckets[p.dataIndex];
+      if(!b)return;
+      S.start=b.from;S.end=b.to;
+      document.getElementById('startSel').value=S.start;
+      document.getElementById('endSel').value=S.end;
+      render();
+    });
+    c.__bound=true;
+  }
+}
+
+/* ============ 11. 渠道效能三联图 ============ */
+function drawGrade(gCur,gPrev){
+  const cats=GRADES.map(g=>g+' 级');
+  const cfg=[
+    {id:'cUnitCost',get:a=>a&&a.hires?a.cost/a.hires:null,fmt:v=>v==null?'—':W(v)+' 万'},
+    {id:'cDays',get:a=>a&&a.hires?a.days/a.hires:null,fmt:v=>v==null?'—':Math.round(v)+' 天'},
+    {id:'cRet',get:a=>a&&a.hires?1-a.loss/a.hires:null,fmt:v=>v==null?'—':P(v)}
+  ];
+  cfg.forEach(cc=>{
+    const c=CHARTS[cc.id];if(!c)return;
+    const cur=GRADES.map(g=>{const a=gCur[g];return a?round1(cc.get(a),cc.id):null;});
+    const prev=gPrev?GRADES.map(g=>{const a=gPrev[g];return a?round1(cc.get(a),cc.id):null;}):null;
+    c.setOption({
+      grid:{left:4,right:8,top:18,bottom:4,containLabel:true},
+      tooltip:tipAxis(ps=>{
+        let str=ps[0].axisValue+'<br/>';
+        ps.forEach(p=>{str+=`${p.marker}${p.seriesName}：<b>${cc.fmt(p.value)}</b><br/>`;});
+        return str;
+      }),
+      xAxis:Object.assign({},AXL,{type:'category',data:cats,axisLabel:{color:'#798581',fontSize:10.5,interval:0}}),
+      yAxis:Object.assign({},AXV,{type:'value',splitLine:{show:true,lineStyle:{color:'#EDF0EB'}},axisLabel:{show:false}}),
+      series:[
+        {name:'本期',type:'bar',data:cur,barWidth:'46%',itemStyle:{color:'#0E5A4E'}},
+        {name:'对比期',type:'bar',data:prev||[],barWidth:'46%',itemStyle:{color:'#CBD5CF'}}
+      ]
+    },true);
+  });
+}
+function round1(v,id){ return id==='cRet'&&v!=null?(Math.round(v*1000)/1000):v; }
+
+/* ============ 12. 费用构成（按职级） ============ */
+function drawMix(hunter){
+  const c=CHARTS.chartMix;if(!c)return;
+  const colors=['#0E5A4E','#3E8375','#A97618','#6B5477'];
+  const data=LEVELS.map((l,i)=>({name:l.name,value:roundNum(hunter.byLv[i]?hunter.byLv[i].cost:0),itemStyle:{color:colors[i]}})).filter(d=>d.value>0);
+  c.setOption({
+    tooltip:tipItem(p=>`${p.marker}${p.name}<br/>费用：<b>${W(p.value)} 万元</b>（${p.percent}%）`),
+    legend:{bottom:0,left:'center',itemWidth:9,itemHeight:9,textStyle:{color:'#798581',fontSize:10.5},itemGap:10},
+    series:[{
+      type:'pie',radius:['40%','64%'],center:['50%','42%'],avoidLabelOverlap:true,
+      itemStyle:{borderColor:'#fff',borderWidth:1},
+      label:{show:true,position:'inside',formatter:p=>p.percent>=9?p.percent.toFixed(0)+'%':'',color:'#fff',fontSize:10.5},
+      labelLine:{show:false},
+      data:data
+    }]
+  },true);
+  const tot=data.reduce((a,d)=>a+d.value,0);
+  document.getElementById('mixNote').innerHTML=
+    data.map(d=>`${d.name} ${W(d.value)} 万（${tot?P(d.value/tot):'—'}）`).join('　·　')
+    +`<br>猎头费用合计 ${W(hunter.cost)} 万元`;
+}
+/* ============ 13. 留存走势 ============ */
+function drawRetTrend(labels,vals,prevVals){
+  const c=CHARTS.chartRetTrend;if(!c)return;
+  c.setOption({
+    grid:{left:4,right:10,top:22,bottom:4,containLabel:true},
+    tooltip:tipAxis(ps=>{
+      let s=ps[0].axisValue+'<br/>';
+      ps.forEach(p=>{s+=`${p.marker}${p.seriesName}：<b>${P(p.value)}</b><br/>`;});
+      return s;
+    }),
+    xAxis:Object.assign({},AXL,{type:'category',data:labels,boundaryGap:false,axisLabel:Object.assign({},AXL.axisLabel,{hideOverlap:true,fontSize:10})}),
+    yAxis:Object.assign({},AXV,{type:'value',min:0,max:1,axisLabel:{color:'#798581',fontSize:10,formatter:v=>Math.round(v*100)+'%'},splitLine:{show:true,lineStyle:{color:'#EDF0EB'}}}),
+    series:[
+      {name:'本期',type:'line',data:vals,symbol:'circle',symbolSize:4,lineStyle:{width:2,color:'#0E5A4E'},itemStyle:{color:'#0E5A4E'}},
+      prevVals?{name:'对比期',type:'line',data:prevVals,symbol:'none',lineStyle:{width:1.4,color:CMP_COLOR,type:'dashed'},itemStyle:{color:CMP_COLOR}}:null
+    ].filter(Boolean)
+  },true);
+}
+/* ============ 14. 供应商排名 ============ */
+function drawRank(bySup){
+  const c=CHARTS.chartRank;if(!c)return;
+  const rows=SUPPLIERS.map(s=>{
+    const a=bySup[s.id];
+    if(!a||a.hires<2)return null;
+    const d=derive(Object.assign({},a));
+    return {s,a,d};
+  }).filter(Boolean);
+  const metric=S.rankMetric;
+  const val=o=>metric==='cost'?o.d.unit:(metric==='roi'?o.d.roi:o.d.ret);
+  rows.sort((x,y)=>{
+    const vx=val(x)||0,vy=val(y)||0;
+    return metric==='cost'?vx-vy:vy-vx;
+  });
+  const top=rows.slice(0,9).reverse();
+  const fmt=v=>metric==='cost'?W(v)+' 万':(metric==='roi'?v.toFixed(2)+' ×':P(v));
+  c.setOption({
+    grid:{left:6,right:60,top:6,bottom:6,containLabel:true},
+    tooltip:tipItem(p=>{
+      const o=top[p.dataIndex];
+      return `<b>${o.s.name}</b>　${o.s.grade} 级<br/>单位成本：${W(o.d.unit)} 万/人<br/>入职：${NUM(o.d.hires)} 人 · 留存：${P(o.d.ret)}<br/>费用：${W(o.d.cost)} 万 · ROI：${o.d.roi.toFixed(2)} ×`;
+    }),
+    xAxis:Object.assign({},AXV,{type:'value',axisLabel:{color:'#798581',fontSize:10,formatter:v=>metric==='cost'?v+'万':(metric==='roi'?v+'×':Math.round(v*100)+'%')},splitLine:{show:true,lineStyle:{color:'#EDF0EB'}}}),
+    yAxis:Object.assign({},AXL,{type:'category',data:top.map(o=>o.s.name),axisLabel:{color:'#3D4B47',fontSize:11}}),
+    series:[{
+      type:'bar',data:top.map(o=>({value:roundNum(val(o)),itemStyle:{color:GRADE_COLOR[o.s.grade]}})),
+      barWidth:'58%',
+      label:{show:true,position:'right',color:'#3D4B47',fontSize:10.5,formatter:p=>fmt(p.value)},
+      emphasis:{itemStyle:{opacity:.85}}
+    }]
+  },true);
+  if(!c.__bound){
+    c.on('click',p=>{const o=top[p.dataIndex];if(!o)return;S.activeSupplier=o.s.id;drawSupplierDetail();});
+    c.__bound=true;
+  }
+}
+function roundNum(v){return v==null?0:Math.round(v*100)/100;}
+
+/* ============ 15. 供应商明细 ============ */
+function drawSupplierDetail(){
+  const box=document.getElementById('supDetail');
+  if(S.activeSupplier==null){box.classList.remove('show');return;}
+  const s=SUPPLIERS[S.activeSupplier];
+  const a=derive(agg(S.start,S.end,r=>r.sup===s.id));
+  const cr=cmpRange();
+  const prev=validRange(cr[0],cr[1])?derive(agg(cr[0],cr[1],r=>r.sup===s.id)):null;
+  box.classList.add('show');
+  if(CHARTS.sdTrend)CHARTS.sdTrend.resize();
+  document.getElementById('sdName').textContent=s.name+'　'+s.grade+' 级';
+  document.getElementById('sdMeta').textContent=`${MONTHS[S.start].key} 至 ${MONTHS[S.end].key}　·　入职 ${NUM(a.hires)} 人　·　费用 ${W(a.cost)} 万元`;
+  document.getElementById('sdGrid').innerHTML=[
+    ['单位成本',W(a.unit)+' 万',prev?deltaText(delta(a.unit,prev.unit)):''],
+    ['到岗周期',a.cyc==null?'—':Math.round(a.cyc)+' 天',prev?deltaText(delta(a.cyc,prev.cyc)):''],
+    ['保期留存',P(a.ret),prev?deltaText(delta(a.ret,prev.ret)):''],
+    ['ROI 倍数',a.roi==null?'—':a.roi.toFixed(2)+' ×',prev?deltaText(delta(a.roi,prev.roi)):'']
+  ].map(([k,v,d])=>`<div>${k}<b>${v}</b>${d?`<span style="font-size:11px;color:#798581">${d}</span>`:''}</div>`).join('');
+  const c=CHARTS.sdTrend;if(!c)return;
+  c.resize();
+  const bs=buckets(S.start,S.end);
+  const sp=bs.map(b=>agg(b.from,b.to,r=>r.sup===s.id));
+  c.setOption({
+    grid:{left:4,right:8,top:16,bottom:2,containLabel:true},
+    tooltip:tipAxis(ps=>{
+      let str=ps[0].axisValue+'<br/>';
+      ps.forEach(p=>{str+=`${p.marker}${p.seriesName}：<b>${p.seriesName==='费用'?W(p.value)+' 万元':NUM(p.value)+' 人'}</b><br/>`;});
+      return str;
+    }),
+    xAxis:Object.assign({},AXL,{type:'category',data:bs.map(b=>b.label),axisLabel:{color:'#798581',fontSize:9.5,hideOverlap:true}}),
+    yAxis:[Object.assign({},AXV,{type:'value',show:false}),Object.assign({},AXV,{type:'value',show:false})],
+    series:[
+      {name:'费用',type:'bar',data:sp.map(x=>roundNum(x.cost)),barWidth:'52%',itemStyle:{color:'#CBD5CF'}},
+      {name:'入职',type:'line',yAxisIndex:1,data:sp.map(x=>x.hires),symbol:'circle',symbolSize:4,lineStyle:{width:2,color:'#0E5A4E'},itemStyle:{color:'#0E5A4E'}}
+    ]
+  },true);
+}
+
+/* ============ 16. 气泡图 ============ */
+function drawBubble(bySup){
+  const c=CHARTS.chartBubble;if(!c)return;
+  const pts=SUPPLIERS.map(s=>{
+    const a=bySup[s.id];
+    if(!a||!a.hires)return null;
+    const d=derive(Object.assign({},a));
+    return {name:s.name,value:[roundNum(d.cost),d.ret==null?0:Math.round(d.ret*1000)/1000,d.hires,s.grade],itemStyle:{color:GRADE_COLOR[s.grade],opacity:.82}};
+  }).filter(Boolean);
+  c.setOption({
+    grid:{left:6,right:20,top:18,bottom:6,containLabel:true},
+    tooltip:tipItem(p=>{
+      const v=p.data.value;
+      return `<b>${p.data.name}</b>　${v[3]} 级<br/>费用：${W(v[0])} 万元<br/>留存率：${P(v[1])}<br/>入职：${NUM(v[2])} 人`;
+    }),
+    xAxis:Object.assign({},AXV,{type:'value',axisLabel:{color:'#798581',fontSize:10,formatter:v=>v>=1000?(v/1000).toFixed(1)+'k':v},splitLine:{show:true,lineStyle:{color:'#EDF0EB'}}}),
+    yAxis:Object.assign({},AXV,{type:'value',min:0.82,max:1,splitNumber:3,axisLabel:{color:'#798581',fontSize:10,formatter:v=>Math.round(v*100)+'%'},splitLine:{show:true,lineStyle:{color:'#EDF0EB'}}}),
+    series:[{
+      type:'scatter',data:pts,
+      symbolSize:v=>Math.min(46,Math.max(9,Math.sqrt(v[2])*4.6)),
+      itemStyle:{borderColor:'#fff',borderWidth:1},
+      label:{show:false},
+      emphasis:{label:{show:true,position:'top',formatter:p=>p.data.name,color:'#14201D',fontSize:11},itemStyle:{opacity:1}}
+    }]
+  },true);
+}
+
+/* ============ 17. 漏斗 ============ */
+function drawFunnel(cur,prev){
+  const c=CHARTS.chartFunnel;if(!c)return;
+  const stages=['推荐简历','有效简历','面试','Offer','入职'];
+  const vals=[cur.refer,cur.valid,cur.interview,cur.offer,cur.hires];
+  const prevVals=prev?[prev.refer,prev.valid,prev.interview,prev.offer,prev.hires]:null;
+  const ramp=['#0E5A4E','#2C7265','#3E8375','#5E9B8C','#7FB2A4'];
+  const ind=[];
+  stages.forEach((n,i)=>{
+    if(i===0)return;
+    const r=vals[i-1]?vals[i]/vals[i-1]:null;
+    ind.push(`${n}转化 ${r==null?'—':P(r)}`);
+  });
+  document.getElementById('funnelNote').textContent='本期各环节转化率：'+ind.join('　·　');
+  const mk=(name,vals,left,cols)=>({
+    name,type:'funnel',left,width:'43%',top:6,bottom:6,sort:'descending',gap:2,minSize:'12%',
+    label:{position:'inside',color:'#fff',fontSize:10.5,formatter:p=>NUM(p.value)},
+    itemStyle:{borderColor:'#fff',borderWidth:1},
+    data:stages.map((s,i)=>({name:s,value:Math.round(vals[i]||0),itemStyle:{color:cols[i]}})),
+    emphasis:{label:{fontSize:12}}
+  });
+  c.setOption({
+    tooltip:tipItem(p=>`${p.marker}${p.seriesName} · ${p.name}<br/>人数：<b>${NUM(p.value)}</b>`),
+    series:[
+      mk('本期',vals,'2%',ramp),
+      prevVals?mk('对比期',prevVals,'55%',['#8C9C97','#98A7A2','#A5B2AD','#B3BEB9','#C1CAC6']):null
+    ].filter(Boolean)
+  },true);
+}
+/* ============ 18. 明细表 ============ */
+const DIMS={
+  month:{label:'入职月份',items:()=>MONTHS.filter(m=>m.idx>=S.start&&m.idx<=S.end).map(m=>({key:m.idx,name:m.key,pred:r=>r.mi===m.idx}))},
+  level:{label:'职级',items:()=>LEVELS.map((l,i)=>({key:i,name:l.name,pred:r=>r.li===i}))},
+  grade:{label:'猎头等级',items:()=>GRADES.map(g=>({key:g,name:g+' 级',pred:r=>r.sup>=0&&SUPPLIERS[r.sup]&&SUPPLIERS[r.sup].grade===g}))},
+  supplier:{label:'猎头供应商',items:()=>SUPPLIERS.map((s,i)=>({key:i,name:s.name,pred:r=>r.sup===i}))}
+};
+let SORT={key:'cost',dir:-1};
+let LAST_ROWS=[];
+function drawTable(cmpOk,cr){
+  const dim=DIMS[S.dim];
+  const t=document.getElementById('tbl');
+  const cols=[
+    {k:'name',t:dim.label,w:'25%',num:false},
+    {k:'cost',t:'费用（万元）',w:'10%'},
+    {k:'hires',t:'入职（人）',w:'8%'},
+    {k:'unit',t:'单位成本',w:'11%'},
+    {k:'cyc',t:'到岗周期',w:'9%'},
+    {k:'ret',t:'留存率',w:'8%'},
+    {k:'roi',t:'ROI 倍数',w:'8%'},
+    {k:'costPrev',t:'对比期费用',w:'10.5%'},
+    {k:'dCost',t:'费用 Δ',w:'10.5%'}
+  ];
+  t.querySelector('thead').innerHTML='<tr>'+cols.map(c=>`<th data-k="${c.k}" class="${SORT.key===c.k?'sorted'+(SORT.dir===1?' asc':''):''}">${c.t}</th>`).join('')+'</tr>'
+    +`<colgroup>${cols.map(c=>`<col style="width:${c.w}">`).join('')}</colgroup>`;
+
+  const rows=dim.items().map(it=>{
+    const a=derive(agg(S.start,S.end,r=>r.ch==='hunter'&&it.pred(r)));
+    const b=cmpOk?derive(agg(cr[0],cr[1],r=>r.ch==='hunter'&&it.pred(r))):null;
+    if(!a.cost&&!a.hires)return null;
+    return {
+      name:it.name,cost:a.cost,hires:a.hires,unit:a.unit,cyc:a.cyc,ret:a.ret,roi:a.roi,
+      costPrev:b?b.cost:null,unitPrev:b?b.unit:null,
+      dCost:b&&b.cost?delta(a.cost,b.cost):null
+    };
+  }).filter(Boolean);
+
+  rows.sort((x,y)=>{
+    const k=SORT.key;
+    let vx=x[k],vy=y[k];
+    if(k==='name')return (x.name>y.name?1:-1)*SORT.dir*-1;
+    vx=vx==null?-Infinity:vx;vy=vy==null?-Infinity:vy;
+    if(vx===vy)return 0;
+    return (vx-vy)*SORT.dir*-1;
+  });
+  LAST_ROWS=rows;
+
+  t.querySelector('tbody').innerHTML=rows.length?rows.map(r=>`<tr>
+    <td title="${r.name}">${r.name}</td>
+    <td>${W(r.cost)}</td>
+    <td>${NUM(r.hires)}</td>
+    <td>${W(r.unit)}</td>
+    <td>${r.cyc==null?'—':Math.round(r.cyc)+' 天'}</td>
+    <td>${P(r.ret)}</td>
+    <td>${r.roi==null?'—':r.roi.toFixed(2)+' ×'}</td>
+    <td>${r.costPrev==null?'—':W(r.costPrev)}</td>
+    <td class="${r.dCost==null?'':(r.dCost>0?'neg':'pos')}">${r.dCost==null?'—':deltaText(r.dCost)}</td>
+  </tr>`).join(''):'<tr><td colspan="9" style="text-align:center;color:#798581">当前筛选下无数据</td></tr>';
+
+  t.querySelectorAll('th').forEach(th=>{
+    th.onclick=()=>{
+      const k=th.dataset.k;
+      if(SORT.key===k)SORT.dir*=-1;else SORT={key:k,dir:-1};
+      drawTable(cmpOk,cr);
+    };
+  });
+}
+
+/* ============ 19. 导出 ============ */
+function exportCSV(){
+  if(!LAST_ROWS.length){alert('当前视图无可导出的数据');return;}
+  const head=['维度','费用(万元)','入职(人)','单位成本(万元/人)','到岗周期(天)','留存率','ROI倍数','对比期费用(万元)','费用变化'];
+  const lines=[head.join(',')].concat(LAST_ROWS.map(r=>[
+    '"'+r.name.replace(/"/g,'""')+'"',
+    r.cost.toFixed(1),r.hires, r.unit==null?'':r.unit.toFixed(2),
+    r.cyc==null?'':Math.round(r.cyc), r.ret==null?'':(r.ret*100).toFixed(1)+'%',
+    r.roi==null?'':r.roi.toFixed(2), r.costPrev==null?'':r.costPrev.toFixed(1),
+    r.dCost==null?'':(r.dCost*100).toFixed(1)+'%'
+  ].join(',')));
+  const blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='猎头渠道ROI_'+MONTHS[S.start].key+'_'+MONTHS[S.end].key+'_'+S.dim+'.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+/* ============ 20. 主渲染 ============ */
+function render(){
+  const curAll=derive(agg(S.start,S.end));
+  const curH=derive(agg(S.start,S.end,r=>r.ch==='hunter'));
+  const cr=cmpRange();
+  const cmpOk=validRange(cr[0],cr[1]);
+  const prevAll=cmpOk?derive(agg(cr[0],cr[1])):null;
+  const prevH=cmpOk?derive(agg(cr[0],cr[1],r=>r.ch==='hunter')):null;
+
+  document.getElementById('phCost').textContent=`${MONTHS[S.start].key} ~ ${MONTHS[S.end].key}　合计 ${W(curH.cost)} 万元`;
+  document.getElementById('phHire').textContent=`本期 ${NUM(curH.hires)} 人${prevH?'　·　对比期 '+NUM(prevH.hires)+' 人':''}`;
+  document.getElementById('cmpHint').textContent=cmpOk
+    ? `对比期 ${MONTHS[cr[0]].key} ~ ${MONTHS[cr[1]].key}（${S.cmp==='yoy'?'同比':(S.cmp==='mom'?'环比':'自定义')}）`
+    : '对比期超出数据范围（数据自 2024-01 起）';
+
+  // 时间序列
+  const bs=buckets(S.start,S.end);
+  lastBuckets=bs;
+  const labels=bs.map(b=>b.label);
+  const curS=bs.map(b=>derive(agg(b.from,b.to,r=>r.ch==='hunter')));
+  let prevS=null;
+  if(cmpOk){
+    const cb=buckets(Math.max(0,cr[0]),Math.min(MONTHS.length-1,cr[1]));
+    prevS=bs.map((_,i)=>{
+      const b=cb[i];
+      return b?derive(agg(b.from,b.to,r=>r.ch==='hunter')):null;
+    });
+  }
+
+  const costCur=curS.map(a=>roundNum(a.cost));
+  const costPrev=prevS?prevS.map(a=>a?roundNum(a.cost):null):null;
+  const hireCur=curS.map(a=>Math.round(a.hires));
+  const hirePrev=prevS?prevS.map(a=>a?Math.round(a.hires):null):null;
+  const retCur=curS.map(a=>a.ret==null?null:Math.round(a.ret*1000)/1000);
+  const retPrev=prevS?prevS.map(a=>a&&a.ret!=null?Math.round(a.ret*1000)/1000:null):null;
+
+  drawKPI(curH,prevH,curAll,prevAll,{cost:costCur,hires:hireCur,ret:retCur});
+  drawTrend(labels,costCur,costPrev,'line','chartCost',v=>v==null?'—':W(v)+' 万');
+  drawTrend(labels,hireCur,hirePrev,'bar','chartHire',v=>v==null?'—':NUM(v)+' 人');
+  const gradeSet={};
+  GRADES.forEach(g=>{gradeSet[g]=derive(agg(S.start,S.end,r=>r.ch==='hunter'&&r.sup>=0&&SUPPLIERS[r.sup]&&SUPPLIERS[r.sup].grade===g));});
+  let gradePrev=null;
+  if(cmpOk){gradePrev={};GRADES.forEach(g=>{gradePrev[g]=derive(agg(cr[0],cr[1],r=>r.ch==='hunter'&&r.sup>=0&&SUPPLIERS[r.sup]&&SUPPLIERS[r.sup].grade===g));});}
+  drawGrade(gradeSet,gradePrev);
+  drawMix(curH);
+  drawRetTrend(labels,retCur,retPrev);
+  drawRank(curH.bySup);
+  drawBubble(curH.bySup);
+  drawFunnel(curH,prevH);
+  drawTable(cmpOk,cr);
+  if(S.activeSupplier!=null)drawSupplierDetail();
+
+  // 时间粒度变化时图例/说明
+  document.getElementById('phBubble').textContent=`气泡大小 = 入职人数　·　${MONTHS[S.start].key} ~ ${MONTHS[S.end].key}`;
+}
+
+
+/* ============ 20.5 录入 / 数据源 交互 ============ */
+function openOv(id){
+  const el=document.getElementById(id);
+  el.classList.add('show');el.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+}
+function closeOv(id){
+  const el=document.getElementById(id);
+  el.classList.remove('show');el.setAttribute('aria-hidden','true');
+  document.body.style.overflow='';
+}
+function fillEntryForm(){
+  const mSel=document.getElementById('fMonth');
+  const cur=MONTHS[MONTHS.length-1].key;
+  mSel.innerHTML=MONTHS.slice().reverse().map(m=>`<option value="${m.key}">${m.key}</option>`).join('');
+  mSel.value=cur;
+  document.getElementById('fLevel').innerHTML=LEVELS.map(l=>`<option value="${l.id}">${l.name}（基准 ${l.salary} 万）</option>`).join('');
+  syncSupSelect();
+  calcFee();
+}
+function syncSupSelect(){
+  const sel=document.getElementById('fSup');
+  const keepH=sel.value;
+  const sups=SUPPLIERS.filter(s=>s.grade);
+  sel.innerHTML=sups.map(s=>`<option value="${s.id}">${s.name}（${s.grade} 级）</option>`).join('');
+  if(keepH&&sups.some(s=>String(s.id)===keepH))sel.value=keepH;
+}
+function calcFee(){
+  const sal=parseFloat(document.getElementById('fSalary').value||'0');
+  const rate=document.getElementById('fRate').value;
+  const feeEl=document.getElementById('fFee');
+  if(rate!=='custom'&&sal>0)feeEl.value=(sal*parseFloat(rate)).toFixed(2);
+}
+function readHireForm(){
+  const month=document.getElementById('fMonth').value;
+  const level=document.getElementById('fLevel').value;
+  const channel='hunter';
+  const supplier=document.getElementById('fSup').value;
+  const salary=parseFloat(document.getElementById('fSalary').value||'0');
+  const fee=parseFloat(document.getElementById('fFee').value||'0');
+  const days=parseFloat(document.getElementById('fDays').value||'0');
+  const lost=document.getElementById('fLost').checked;
+  const note=document.getElementById('fNote').value.trim();
+  if(!month)return {err:'请选择入职月份'};
+  if(!(salary>0))return {err:'请填写固定税前年薪（万元）'};
+  if(!(fee>=0)||document.getElementById('fFee').value==='')return {err:'请填写服务费（万元）'};
+  if(channel==='hunter'&&!supplier)return {err:'猎头渠道需选择供应商，可先在「猎头供应商」页新增'};
+  return {rec:{month,level,channel,supplier,salary,fee,days,lost,note}};
+}
+async function saveHire(){
+  const btn=document.getElementById('btnSaveHire');
+  const msg=document.getElementById('hireMsg');
+  const r=readHireForm();
+  if(r.err){msg.textContent=r.err;msg.style.color='var(--neg)';return;}
+  msg.style.color='var(--mid)';msg.textContent='保存中…';
+  btn.disabled=true;
+  try{
+    if(CLOUD.connected){
+      await dbInsertHire(r.rec);
+      await dbPull();
+    }else{
+      r.rec.id='u'+Date.now();
+      USER_RECS.push(r.rec);
+      persistLocal();rebuildRecs();
+    }
+    render();renderRecList();renderSupList();
+    document.getElementById('fSalary').value='';
+    document.getElementById('fFee').value='';
+    document.getElementById('fLost').checked=false;
+    document.getElementById('fNote').value='';
+    msg.textContent='已保存，图表已更新';msg.style.color='var(--pos)';
+    toast('已新增 1 条入职记录');
+  }catch(e){
+    msg.textContent='保存失败：'+e.message;msg.style.color='var(--neg)';
+  }finally{btn.disabled=false;}
+}
+function renderRecList(){
+  const tb=document.querySelector('#recList tbody');
+  if(!tb)return;
+  const rows=USER_RECS.slice().sort((a,b)=>b.month.localeCompare(a.month));
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="color:var(--mid);padding:12px 8px">暂无手动录入记录</td></tr>';return;}
+  tb.innerHTML=rows.map(u=>{
+    const sup=u.channel==='hunter'?(()=>{const i=SUPPLIERS.findIndex(s=>String(s.id)===String(u.supplier));return i>=0?SUPPLIERS[i].name:'—';})():'—';
+    const lv=LEVELS.find(l=>l.id===u.level);
+    return `<tr><td class="num">${u.month}</td><td>${lv?lv.name:u.level}</td>
+      <td title="${sup}">${sup}</td><td class="num">${(+u.fee).toFixed(2)} 万</td><td>${u.lost?'是':'否'}</td>
+      <td><button class="del" data-rid="${u.id}">删除</button></td></tr>`;
+  }).join('');
+}
+function renderSupList(){
+  const tb=document.querySelector('#supList tbody');
+  if(!tb)return;
+  const counts={};
+  RECS.forEach(r=>{if(r.ch==='hunter'&&r.sup>=0)counts[r.sup]=(counts[r.sup]||0)+r.hires;});
+  const rows=SUPPLIERS.filter(s=>s.grade);
+  tb.innerHTML=rows.map(sd=>{
+    const i=SUPPLIERS.indexOf(sd);
+    return `<tr><td class="num">${sd.manual?'新增':('#'+(i+1))}</td><td title="${sd.name}">${sd.name}</td><td>${sd.grade}</td>
+      <td class="num">${(counts[i]||0)} 人</td>
+      <td>${sd.manual?`<button class="del" data-sid="${sd.id}">删除</button>`:''}</td></tr>`;
+  }).join('');
+}
+async function delRec(id){
+  try{
+    if(CLOUD.connected){await dbDeleteHire(id);await dbPull();}
+    else{USER_RECS=USER_RECS.filter(u=>String(u.id)!==String(id));persistLocal();rebuildRecs();}
+    render();renderRecList();renderSupList();toast('记录已删除');
+  }catch(e){toast('删除失败：'+e.message,'warn');}
+}
+async function saveSup(){
+  const name=document.getElementById('sName').value.trim();
+  const grade=document.getElementById('sGrade').value;
+  const msg=document.getElementById('supMsg');
+  if(!name){msg.textContent='请填写供应商名称';msg.style.color='var(--neg)';return;}
+  if(SUPPLIERS.some(s=>s.name===name)){msg.textContent='供应商已存在';msg.style.color='var(--neg)';return;}
+  msg.style.color='var(--mid)';msg.textContent='保存中…';
+  try{
+    if(CLOUD.connected){await dbInsertSup(name,grade);await dbPull();}
+    else{
+      const item={id:nextSupId(),name,grade,note:document.getElementById('sNote').value.trim()};
+      USER_SUPS.push(item);SUPPLIERS.push(Object.assign({strength:0,manual:true},item));
+      persistLocal();rebuildRecs();
+    }
+    document.getElementById('sName').value='';document.getElementById('sNote').value='';
+    render();renderSupList();syncSupSelect();renderRecList();
+    msg.textContent='已新增 '+name;msg.style.color='var(--pos)';
+    toast('已新增供应商 '+name);
+  }catch(e){msg.textContent='保存失败：'+e.message;msg.style.color='var(--neg)';}
+}
+async function delSup(id){
+  const sd=SUPPLIERS.find(s=>String(s.id)===String(id));
+  if(!sd)return;
+  try{
+    if(CLOUD.connected&&sd.dbId!=null){await dbDeleteSup(sd.dbId);await dbPull();}
+    else{
+      USER_SUPS=USER_SUPS.filter(u=>String(u.id)!==String(id));
+      const i=SUPPLIERS.indexOf(sd);if(i>=0)SUPPLIERS.splice(i,1);
+      USER_RECS.forEach(u=>{if(String(u.supplier)===String(id))u.supplier=null;});
+      persistLocal();rebuildRecs();
+    }
+    render();renderSupList();syncSupSelect();renderRecList();toast('已删除供应商');
+  }catch(e){toast('删除失败：'+e.message,'warn');}
+}
+
+/* ---- Supabase 设置界面 ---- */
+function cloudMsg(text,type){
+  const el=document.getElementById('cloudMsg');
+  el.textContent=text;
+  el.style.color=type==='err'?'var(--neg)':(type==='ok'?'var(--pos)':'var(--mid)');
+}
+async function connectCloud(){
+  const url=document.getElementById('cfgUrl').value.trim().replace(/\/$/,'');
+  const key=document.getElementById('cfgKey').value.trim();
+  if(!url||!key){cloudMsg('请填写 Project URL 与 anon key','err');return;}
+  cloudMsg('连接中…');
+  try{
+    await dbConnect(url,key);
+    persistLocal();
+    S.demo=false;document.querySelectorAll('#dataScope button').forEach(b=>b.classList.toggle('on',b.dataset.v==='real'));
+    await dbPull();
+    rebuildRecs();render();updateStamp();updateScopeHint();
+    cloudMsg('已连接，当前读取线上数据；之后的录入会直接写入数据库','ok');
+    dbWatch(async()=>{try{await dbPull();render();renderRecList();renderSupList();toast('检测到数据库更新');}catch(e){}});
+    toast('Supabase 已连接');
+  }catch(e){cloudMsg('连接失败：'+e.message,'err');}
+}
+async function disconnectCloud(){
+  if(CLOUD.chan&&CLOUD.client)CLOUD.client.removeChannel(CLOUD.chan);
+  CLOUD.client=null;CLOUD.connected=false;CLOUD.chan=null;
+  CLOUD.url='';CLOUD.key='';
+  S.demo=true;
+  resetSuppliers();
+  loadLocal();
+  render();updateStamp();updateScopeHint();renderRecList();renderSupList();
+  document.getElementById('cfgUrl').value='';document.getElementById('cfgKey').value='';
+  cloudMsg('已断开，回到本机存储模式');
+}
+async function syncNow(){
+  if(!CLOUD.connected){cloudMsg('尚未连接数据库','err');return;}
+  try{await dbPull();render();renderRecList();renderSupList();cloudMsg('已拉取最新数据','ok');}
+  catch(e){cloudMsg('同步失败：'+e.message,'err');}
+}
+function sqlText(){
+  return `-- 猎头渠道 ROI 看板 · Supabase 建表脚本
+-- 在 Supabase Dashboard → SQL Editor 中整段执行
+
+create table if not exists public.hh_suppliers (
+  id      bigserial primary key,
+  name    text not null,
+  grade   text not null check (grade in ('S','A','B','C')),
+  note    text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.hh_hires (
+  id             bigserial primary key,
+  hire_month     text not null,                 -- 'YYYY-MM'
+  level          text not null,                 -- P4 / P6 / M2 / M4
+  channel        text not null,                 -- hunter / referral / site / platform
+  supplier_id    bigint references public.hh_suppliers(id) on delete set null,
+  annual_salary  numeric(10,1) not null,        -- 固定税前年薪（万元）
+  fee            numeric(10,2) not null,        -- 猎头服务费 / 内推奖金（万元）
+  vacancy_days   numeric(6,1) default 0,        -- 空岗天数
+  lost           boolean default false,         -- 6 个月保期内是否流失
+  note           text,
+  created_at     timestamptz not null default now()
+);
+
+create index if not exists idx_hh_hires_month on public.hh_hires (hire_month);
+create index if not exists idx_hh_hires_sup on public.hh_hires (supplier_id);
+
+alter table public.hh_suppliers enable row level security;
+alter table public.hh_hires     enable row level security;
+
+-- 内部小范围使用：允许 anon 读写
+-- 若需要更严格的权限，把下面策略换成指定登录用户（auth.uid()）条件
+drop policy if exists hh_sup_all on public.hh_suppliers;
+create policy hh_sup_all on public.hh_suppliers for all to anon using (true) with check (true);
+
+drop policy if exists hh_hire_all on public.hh_hires;
+create policy hh_hire_all on public.hh_hires for all to anon using (true) with check (true);
+
+-- 开启实时（Realtime）推送
+alter publication supabase_realtime add table public.hh_hires;
+alter publication supabase_realtime add table public.hh_suppliers;
+`;
+}
+function downloadSql(){
+  const blob=new Blob([sqlText()],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='hh_roi_supabase.sql';
+  document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+  cloudMsg('已下载建表脚本，到 Supabase SQL Editor 执行','ok');
+}
+
+function initEntryUI(){
+  document.getElementById('btnEntry').addEventListener('click',()=>{fillEntryForm();renderRecList();renderSupList();openOv('ovEntry');});
+  document.getElementById('btnCloud').addEventListener('click',()=>{
+    document.getElementById('cfgUrl').value=CLOUD.url||'';
+    document.getElementById('cfgKey').value=CLOUD.key||'';
+    cloudMsg(CLOUD.connected?'已连接线上数据库':'未连接，数据保存在本机浏览器');
+    openOv('ovCloud');
+  });
+  document.querySelectorAll('.mx').forEach(b=>b.addEventListener('click',()=>closeOv(b.dataset.close)));
+  document.querySelectorAll('.overlay').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)closeOv(ov.id);}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.show').forEach(o=>closeOv(o.id));});
+  document.querySelectorAll('.mtab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.mtab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('tabHire').style.display=t.dataset.tab==='hire'?'block':'none';
+    document.getElementById('tabSup').style.display=t.dataset.tab==='sup'?'block':'none';
+  }));
+  document.getElementById('fSalary').addEventListener('input',calcFee);
+  document.getElementById('fRate').addEventListener('change',()=>{
+    const fe=document.getElementById('fFee');fe.disabled=document.getElementById('fRate').value==='custom'&&false;
+    calcFee();
+  });
+  document.getElementById('btnSaveHire').addEventListener('click',saveHire);
+  document.getElementById('btnSaveSup').addEventListener('click',saveSup);
+  document.querySelector('#recList tbody').addEventListener('click',e=>{
+    const b=e.target.closest('.del');if(b)delRec(b.dataset.rid);
+  });
+  document.querySelector('#supList tbody').addEventListener('click',e=>{
+    const b=e.target.closest('.del');if(b)delSup(b.dataset.sid);
+  });
+  document.getElementById('btnConnect').addEventListener('click',connectCloud);
+  document.getElementById('btnSyncNow').addEventListener('click',syncNow);
+  document.getElementById('btnDisconnect').addEventListener('click',disconnectCloud);
+  document.getElementById('btnSql').addEventListener('click',downloadSql);
+}
+
+/* ============ 21. 启动 ============ */
+loadLocal();
+buildControls();
+initEntryUI();
+syncChipState();
+updateScopeHint();
+updateStamp();
+initCharts();
+if(window.echarts){
+  render();
+}else{
+  document.addEventListener('DOMContentLoaded',()=>{initCharts();render();autoConnect();});
+  render();
+}
+async function autoConnect(){
+  if(!CLOUD.url||!CLOUD.key)return;
+  try{
+    await dbConnect(CLOUD.url,CLOUD.key);
+    S.demo=false;rebuildRecs();await dbPull();render();updateScopeHint();
+    dbWatch(async()=>{try{await dbPull();render();toast('已同步最新数据');}catch(e){}});
+    toast('已连接 Supabase，数据实时同步');
+  }catch(e){toast('自动连接失败：'+e.message,'warn');}
+}
+
+</script>
 </body>
 </html>
+<!-- （注：内容由AI生成） -->
