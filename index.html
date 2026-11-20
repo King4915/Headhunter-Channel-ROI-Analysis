@@ -211,6 +211,9 @@ tr:hover td:first-child{background:#F7FAF7}
 .toast.warn{background:#8A5A12}
 @media (max-width:720px){.form{grid-template-columns:repeat(2,minmax(0,1fr))}.cfgrow{grid-template-columns:1fr}.mlist table{font-size:11px}}
 
+
+/* AI import extension */
+.ai-modal{width:min(1120px,100%)}.ai-drop{border:2px dashed var(--rule2);padding:25px;text-align:center;background:#fafcf9;cursor:pointer}.ai-drop:hover{border-color:var(--teal)}.ai-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}.ai-table{width:100%;min-width:1150px;table-layout:auto}.ai-table td,.ai-table th{text-align:left;position:static!important;white-space:nowrap}.ai-table input,.ai-table select{width:115px;border:1px solid var(--rule2);padding:4px;font:inherit}.ai-table input.ai-wide{width:160px}.ai-pill{font-size:11px;padding:3px 6px;background:#edf1ec}.ai-err{color:var(--neg)}.ai-good{color:var(--pos)}.ai-help{font-size:12px;color:var(--ink3);line-height:1.8}.ai-scroll{max-height:350px;overflow:auto}.ai-filelist{font-size:12px;white-space:pre-wrap;max-height:100px;overflow:auto}
 </style>
 </head>
 <body>
@@ -224,6 +227,7 @@ tr:hover td:first-child{background:#F7FAF7}
       </div>
       <div class="stampwrap">
         <span class="stamp" id="dataStamp">示例数据 · 本地保存</span>
+        <button class="btn-export" id="btnAIImport">AI 批量导入</button>
         <button class="btn-export" id="btnEntry">录入数据</button>
         <button class="btn-export" id="btnCloud">数据源 / Supabase</button>
         <button class="btn-export" id="btnExport">导出 CSV</button>
@@ -421,6 +425,18 @@ tr:hover td:first-child{background:#F7FAF7}
   </div>
 </div>
 
+
+<div class="overlay" id="ovAI" aria-hidden="true"><div class="modal ai-modal" role="dialog" aria-label="AI 批量导入">
+<div class="mhead"><h3>AI 智能批量导入 · 多格式 / 多版本</h3><button class="mx" data-close="ovAI" aria-label="关闭">×</button></div>
+<div class="mbody"><div class="ai-drop" id="aiDrop"><b>点击选择文件，或拖拽文件到这里</b><p class="ai-help">支持 Excel、CSV、JSON、DOCX、PDF、TXT、PNG/JPG、ZIP（ZIP 内可混合格式）</p><input type="file" id="aiFiles" multiple accept=".xlsx,.xls,.csv,.json,.docx,.pdf,.txt,.png,.jpg,.jpeg,.zip" style="display:none"></div>
+<div class="ai-bar"><button class="primary" id="aiParse">解析文件</button><label class="ai-help"><input type="checkbox" id="aiUseModel"> 使用 DeepSeek 智能匹配（需要先部署 Edge Function）</label><button class="primary ghost" id="aiDownloadTemplate">下载 CSV 模板</button><button class="primary ghost" id="aiClear">清空预览</button></div>
+<div id="aiFileList" class="ai-filelist"></div><p class="ai-help">默认在浏览器解析结构化文件；勾选 AI 后将提取的文本发送到你的 Supabase Edge Function。请勿上传未经授权的敏感个人信息。扫描件需 OCR 服务，本版不自动识别图片文字。</p>
+<div id="aiStatus" class="note-box">尚未选择文件。正式导入前必须连接 Supabase；所有记录先在这里审核。</div>
+<div class="ai-bar"><span id="aiCount" class="ai-help">0 条待审核</span><button class="primary" id="aiCommit" disabled>确认导入审核通过的记录</button></div>
+<div class="tblwrap ai-scroll"><table class="ai-table"><thead><tr><th>选择</th><th>状态</th><th>来源</th><th>月份</th><th>职级</th><th>猎头供应商</th><th>年薪(万)</th><th>服务费(万)</th><th>空岗天数</th><th>保期流失</th><th>备注</th></tr></thead><tbody id="aiRows"><tr><td colspan="11">暂无解析结果</td></tr></tbody></table></div>
+<p class="ai-help">重复识别基于当前字段组合，仅能提示疑似重复；同月同供应商同薪酬的不同人选可能被误判。请逐条核对。导入时仅新增，不自动覆盖历史记录。</p>
+</div></div></div>
+
 <!-- ===== 数据源弹层 ===== -->
 <div class="overlay" id="ovCloud" aria-hidden="true">
   <div class="modal" role="dialog" aria-label="数据源设置">
@@ -428,6 +444,8 @@ tr:hover td:first-child{background:#F7FAF7}
     <div class="mbody">
       <div class="cfgrow"><span>Project URL</span><input id="cfgUrl" type="text" placeholder="https://xxxxxxxx.supabase.co"></div>
       <div class="cfgrow"><span>anon public key</span><input id="cfgKey" type="text" placeholder="eyJhbGciOi...（Project Settings → API）"></div>
+      <div class="cfgrow"><span>AI 安全登录邮箱</span><input id="aiLoginEmail" type="email" placeholder="用于 AI 功能的 Supabase 登录邮箱"></div>
+      <div class="mact"><button class="primary ghost" id="aiLogin">发送 AI 登录链接</button><button class="primary ghost" id="aiLogout">退出 AI 登录</button></div>
       <div class="mact">
         <button class="primary" id="btnConnect">测试并连接</button>
         <button class="primary ghost" id="btnSyncNow">立即同步</button>
@@ -1616,6 +1634,43 @@ function initEntryUI(){
   document.getElementById('btnSql').addEventListener('click',downloadSql);
 }
 
+
+/* ===== AI multi-format import extension ===== */
+const AI={files:[],rows:[],busy:false};
+const aiEl=id=>document.getElementById(id);
+const aiEsc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function aiStatus(t){aiEl('aiStatus').textContent=t;}
+function aiLoad(url,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve();const s=document.createElement('script');s.src=url;s.onload=resolve;s.onerror=()=>reject(Error('解析依赖加载失败，请检查网络：'+globalName));document.head.appendChild(s);});}
+function aiPick(files){AI.files=Array.from(files||[]);aiEl('aiFileList').textContent=AI.files.map(f=>f.name+' · '+Math.ceil(f.size/1024)+' KB').join('\n');aiStatus('已选择 '+AI.files.length+' 个文件，点击「解析文件」。');}
+function aiHeader(k){return String(k||'').toLowerCase().replace(/[\s_（）()\-：:]/g,'');}
+const AI_ALIASES={month:['入职月份','入职时间','入职日期','hiremonth','month','日期'],level:['职级','级别','level','岗位职级'],supplier:['猎头供应商','供应商','猎头公司','猎头名称','合作机构','supplier','vendor'],salary:['固定税前年薪','税前年薪','年薪','annualsalary','salary','薪酬'],fee:['猎头服务费','服务费','猎头费用','费用','fee','服务费用'],days:['空岗天数','空缺天数','到岗周期','vacancydays','days'],lost:['保期流失','是否流失','流失','lost'],note:['备注','岗位','岗位名称','note','说明']};
+function aiGet(o,k){const entries=Object.entries(o||{});const aliases=AI_ALIASES[k].map(aiHeader);const found=entries.find(([a])=>aliases.includes(aiHeader(a)));return found?found[1]:'';}
+function aiMonth(v){if(v instanceof Date)return v.toISOString().slice(0,7);if(typeof v==='number'&&v>30000&&v<90000){const d=new Date(Date.UTC(1899,11,30)+v*86400000);return d.toISOString().slice(0,7);}const s=String(v??'').trim();const m=s.match(/(20\d{2})[年\/.\-]?(0?[1-9]|1[0-2])/);return m?m[1]+'-'+m[2].padStart(2,'0'):'';}
+function aiNumber(v){if(typeof v==='number')return v;const s=String(v??'').replace(/[,，\s￥¥]/g,'');const n=parseFloat(s);if(!Number.isFinite(n))return NaN;return /元/.test(s)&&!/万/.test(s)?n/10000:n;}
+function aiLevel(v){const s=String(v??'').toUpperCase();if(/P4|P5|T4|T5/.test(s))return 'P4';if(/P6|P7|T6|T7/.test(s))return 'P6';if(/M2|M3/.test(s))return 'M2';if(/M4|M5|M6/.test(s))return 'M4';return LEVELS.some(x=>x.id===s)?s:'';}
+function aiLost(v){return /^(1|true|是|有|已流失|流失|yes)$/i.test(String(v??'').trim());}
+function aiNorm(o,source){const salary=aiNumber(aiGet(o,'salary')),fee=aiNumber(aiGet(o,'fee'));return {source,month:aiMonth(aiGet(o,'month')),level:aiLevel(aiGet(o,'level')),supplierName:String(aiGet(o,'supplier')??'').trim(),salary:Number.isFinite(salary)?salary:'',fee:Number.isFinite(fee)?fee:'',days:Number.isFinite(aiNumber(aiGet(o,'days')))?aiNumber(aiGet(o,'days')):0,lost:aiLost(aiGet(o,'lost')),note:String(aiGet(o,'note')??'').trim(),selected:true};}
+function aiAddObjects(arr,source){for(const x of arr){if(x&&typeof x==='object'&&!Array.isArray(x))AI.rows.push(aiNorm(x,source));}}
+function aiDelimited(text,sep){const lines=[];let row=[],v='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(q&&text[i+1]==='"'){v+='"';i++;}else q=!q;}else if(c===sep&&!q){row.push(v);v='';}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(v);if(row.some(x=>x.trim()))lines.push(row);row=[];v='';}else v+=c;}row.push(v);if(row.some(x=>x.trim()))lines.push(row);const headers=lines.shift()||[];return lines.map(a=>Object.fromEntries(headers.map((h,i)=>[h,a[i]??''])));}
+async function aiRead(file,depth=0){if(file.size>20*1024*1024)throw Error(file.name+' 超过单文件 20MB 限制');const name=file.name.toLowerCase();const buf=await file.arrayBuffer();if(name.endsWith('.zip')){if(depth>1)throw Error('ZIP 嵌套层级过深');await aiLoad('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js','JSZip');const z=await JSZip.loadAsync(buf);const entries=Object.values(z.files).filter(x=>!x.dir&&!x.name.startsWith('__MACOSX/')&&!x.name.includes('../'));if(entries.length>100)throw Error('ZIP 内文件超过 100 个');for(const e of entries){const b=await e.async('blob');await aiRead(new File([b],e.name),depth+1);}return;}
+if(/\.(xlsx|xls)$/.test(name)){await aiLoad('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','XLSX');const wb=XLSX.read(buf,{type:'array',cellDates:true});for(const sh of wb.SheetNames){const data=XLSX.utils.sheet_to_json(wb.Sheets[sh],{defval:''});aiAddObjects(data,file.name+' / '+sh);}return;}
+if(name.endsWith('.csv')||name.endsWith('.txt')){const txt=await file.text();if(name.endsWith('.txt')){if(aiEl('aiUseModel').checked){await aiCallModel(txt,file.name);return;}throw Error('TXT 非表格内容需要启用 AI 解析');}const first=txt.split(/\r?\n/)[0]||'';aiAddObjects(aiDelimited(txt,first.includes('\t')?'\t':first.includes(';')?';':','),file.name);return;}
+if(name.endsWith('.json')){const obj=JSON.parse(await file.text());aiAddObjects(Array.isArray(obj)?obj:Array.isArray(obj.records)?obj.records:[obj],file.name);return;}
+if(name.endsWith('.docx')){await aiLoad('https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js','mammoth');const out=await mammoth.extractRawText({arrayBuffer:buf});await aiCallModel(out.value,file.name);return;}
+if(name.endsWith('.pdf')){await aiLoad('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js','pdfjsLib');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:buf}).promise;let txt='';for(let i=1;i<=Math.min(doc.numPages,30);i++){const page=await doc.getPage(i);const content=await page.getTextContent();txt+=content.items.map(x=>x.str).join(' ')+'\n';}await aiCallModel(txt,file.name);return;}
+if(/\.(png|jpg|jpeg)$/.test(name))throw Error(file.name+' 为图片：当前版本尚未集成 OCR，请先转成可复制文字的 PDF 或 Excel');
+throw Error('不支持的格式：'+file.name);
+}
+async function aiCallModel(text,source){if(!aiEl('aiUseModel').checked)throw Error(source+' 需要勾选「使用 DeepSeek 智能匹配」');if(!CLOUD.connected||!CLOUD.client)throw Error('请先连接 Supabase');if(!text.trim())throw Error(source+' 未提取到文本（扫描件需要 OCR）');const {data,error}=await CLOUD.client.functions.invoke('hh-ai-import',{body:{text:text.slice(0,45000),filename:source}});if(error)throw Error('AI 解析失败：'+error.message);if(!data||!Array.isArray(data.records))throw Error('AI 未返回有效 records 数组');aiAddObjects(data.records,source);}
+function aiMatchSup(name){const n=String(name).replace(/^H\d+\s*/i,'').replace(/\s/g,'');return SUPPLIERS.find(s=>s.name.replace(/^H\d+\s*/i,'').replace(/\s/g,'')===n);}
+function aiKey(r,sup){return [r.month,r.level,sup||r.supplierName,Number(r.salary).toFixed(2),Number(r.fee).toFixed(2),Number(r.days).toFixed(1),r.lost].join('|');}
+function aiCheck(r,seen){const sup=aiMatchSup(r.supplierName);if(!MONTHS.some(m=>m.key===r.month))return '月份超范围';if(!LEVELS.some(l=>l.id===r.level))return '职级待确认';if(!sup||sup.dbId==null)return '供应商未匹配';if(!(Number(r.salary)>0)||!(Number(r.fee)>=0)||r.fee==='')return '金额待确认';if(!(Number(r.days)>=0))return '天数错误';const key=aiKey(r,sup.dbId);if(seen.has(key))return '疑似重复';seen.add(key);return '可导入';}
+function aiRender(){const seen=new Set(USER_RECS.map(u=>aiKey(u,(SUPPLIERS.find(s=>String(s.id)===String(u.supplier))||{}).dbId)));AI.rows.forEach(r=>r.status=aiCheck(r,seen));aiEl('aiCount').textContent=`共 ${AI.rows.length} 条 · 可导入 ${AI.rows.filter(r=>r.status==='可导入'&&r.selected).length} 条 · 待处理 ${AI.rows.filter(r=>r.status!=='可导入').length} 条`;aiEl('aiCommit').disabled=!CLOUD.connected||!AI.rows.some(r=>r.status==='可导入'&&r.selected)||AI.busy;aiEl('aiRows').innerHTML=AI.rows.length?AI.rows.map((r,i)=>`<tr><td><input type="checkbox" data-i="${i}" data-k="selected" ${r.selected?'checked':''}></td><td class="${r.status==='可导入'?'ai-good':'ai-err'}">${aiEsc(r.status)}</td><td title="${aiEsc(r.source)}">${aiEsc(r.source.slice(0,26))}</td>${['month','level','supplierName','salary','fee','days'].map(k=>`<td><input data-i="${i}" data-k="${k}" value="${aiEsc(r[k])}" class="${k==='supplierName'?'ai-wide':''}"></td>`).join('')}<td><input type="checkbox" data-i="${i}" data-k="lost" ${r.lost?'checked':''}></td><td><input data-i="${i}" data-k="note" class="ai-wide" value="${aiEsc(r.note)}"></td></tr>`).join(''):'<tr><td colspan="11">暂无解析结果</td></tr>';}
+async function aiParse(){if(AI.busy)return;if(!AI.files.length)return aiStatus('请先选择文件');AI.busy=true;AI.rows=[];aiEl('aiParse').disabled=true;const errors=[];for(const f of AI.files){aiStatus('正在解析 '+f.name+' ...');try{await aiRead(f);}catch(e){errors.push(e.message);}}AI.busy=false;aiEl('aiParse').disabled=false;aiRender();aiStatus(`解析完成：${AI.rows.length} 条。${errors.length?'\n未处理：'+errors.join('；'):''} 请审核并修改错误字段后再导入。`);}
+async function aiCommit(){if(!CLOUD.connected)return aiStatus('请先连接 Supabase');aiRender();const rows=AI.rows.filter(r=>r.selected&&r.status==='可导入');if(!rows.length)return aiStatus('没有可导入记录');if(!confirm(`确认新增 ${rows.length} 条记录到 Supabase？不会覆盖旧记录。`))return;AI.busy=true;aiEl('aiCommit').disabled=true;let done=0;const errs=[];for(const r of rows){try{const sup=aiMatchSup(r.supplierName);await dbInsertHire({month:r.month,level:r.level,channel:'hunter',supplier:sup.id,salary:Number(r.salary),fee:Number(r.fee),days:Number(r.days),lost:r.lost,note:[r.note,'[批量导入:'+r.source+']'].filter(Boolean).join(' ')});r.selected=false;done++;}catch(e){errs.push(r.source+': '+e.message);}}AI.busy=false;try{await dbPull();render();renderRecList();renderSupList();}catch(e){errs.push('同步失败：'+e.message);}aiRender();aiStatus(`成功写入 ${done} 条，失败 ${errs.length} 条。${errs.join('；')}`);}
+function aiInit(){aiEl('aiLogin').addEventListener('click',async()=>{if(!CLOUD.client)return cloudMsg('请先连接 Supabase','err');const email=aiEl('aiLoginEmail').value.trim();if(!email)return cloudMsg('请填写邮箱','err');const {error}=await CLOUD.client.auth.signInWithOtp({email,emailRedirectTo:location.href.split('#')[0]});cloudMsg(error?'发送失败：'+error.message:'登录链接已发送，请到邮箱点击链接',error?'err':'ok');});aiEl('aiLogout').addEventListener('click',async()=>{if(CLOUD.client)await CLOUD.client.auth.signOut();cloudMsg('AI 登录已退出','ok');});aiEl('btnAIImport').addEventListener('click',()=>{openOv('ovAI');aiRender();});aiEl('aiDrop').addEventListener('click',()=>aiEl('aiFiles').click());aiEl('aiFiles').addEventListener('change',e=>aiPick(e.target.files));aiEl('aiDrop').addEventListener('dragover',e=>e.preventDefault());aiEl('aiDrop').addEventListener('drop',e=>{e.preventDefault();aiPick(e.dataTransfer.files);});aiEl('aiParse').addEventListener('click',aiParse);aiEl('aiCommit').addEventListener('click',aiCommit);aiEl('aiClear').addEventListener('click',()=>{AI.rows=[];AI.files=[];aiEl('aiFiles').value='';aiEl('aiFileList').textContent='';aiRender();aiStatus('已清空预览（不会删除数据库记录）');});aiEl('aiRows').addEventListener('change',e=>{const t=e.target;if(!t.dataset.k)return;const r=AI.rows[+t.dataset.i];if(!r)return;r[t.dataset.k]=t.type==='checkbox'?t.checked:t.value;aiRender();});aiEl('aiDownloadTemplate').addEventListener('click',()=>{const txt='入职月份,职级,猎头供应商,固定税前年薪,服务费,空岗天数,保期流失,备注\n2026-10,P6,示例猎头公司,68,13.6,45,否,示例（请删除）';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='猎头批量导入模板.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});}
+aiInit();
+
 /* ============ 21. 启动 ============ */
 loadLocal();
 buildControls();
@@ -1626,6 +1681,7 @@ updateStamp();
 initCharts();
 if(window.echarts){
   render();
+  autoConnect();
 }else{
   document.addEventListener('DOMContentLoaded',()=>{initCharts();render();autoConnect();});
   render();
