@@ -211,9 +211,6 @@ tr:hover td:first-child{background:#F7FAF7}
 .toast.warn{background:#8A5A12}
 @media (max-width:720px){.form{grid-template-columns:repeat(2,minmax(0,1fr))}.cfgrow{grid-template-columns:1fr}.mlist table{font-size:11px}}
 
-
-/* AI import extension */
-.ai-modal{width:min(1120px,100%)}.ai-drop{border:2px dashed var(--rule2);padding:25px;text-align:center;background:#fafcf9;cursor:pointer}.ai-drop:hover{border-color:var(--teal)}.ai-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0}.ai-table{width:100%;min-width:1150px;table-layout:auto}.ai-table td,.ai-table th{text-align:left;position:static!important;white-space:nowrap}.ai-table input,.ai-table select{width:115px;border:1px solid var(--rule2);padding:4px;font:inherit}.ai-table input.ai-wide{width:160px}.ai-pill{font-size:11px;padding:3px 6px;background:#edf1ec}.ai-err{color:var(--neg)}.ai-good{color:var(--pos)}.ai-help{font-size:12px;color:var(--ink3);line-height:1.8}.ai-scroll{max-height:350px;overflow:auto}.ai-filelist{font-size:12px;white-space:pre-wrap;max-height:100px;overflow:auto}
 </style>
 </head>
 <body>
@@ -227,7 +224,6 @@ tr:hover td:first-child{background:#F7FAF7}
       </div>
       <div class="stampwrap">
         <span class="stamp" id="dataStamp">示例数据 · 本地保存</span>
-        <button class="btn-export" id="btnAIImport">AI 批量导入</button>
         <button class="btn-export" id="btnEntry">录入数据</button>
         <button class="btn-export" id="btnCloud">数据源 / Supabase</button>
         <button class="btn-export" id="btnExport">导出 CSV</button>
@@ -425,18 +421,6 @@ tr:hover td:first-child{background:#F7FAF7}
   </div>
 </div>
 
-
-<div class="overlay" id="ovAI" aria-hidden="true"><div class="modal ai-modal" role="dialog" aria-label="AI 批量导入">
-<div class="mhead"><h3>AI 智能批量导入 · 多格式 / 多版本</h3><button class="mx" data-close="ovAI" aria-label="关闭">×</button></div>
-<div class="mbody"><div class="ai-drop" id="aiDrop"><b>点击选择文件，或拖拽文件到这里</b><p class="ai-help">支持 Excel、CSV、JSON、DOCX、PDF、TXT、PNG/JPG、ZIP；已适配猎头费用报账明细（费用单仅供关联审核）</p><input type="file" id="aiFiles" multiple accept=".xlsx,.xls,.csv,.json,.docx,.pdf,.txt,.png,.jpg,.jpeg,.zip" style="display:none"></div>
-<div class="ai-bar"><button class="primary" id="aiParse">解析文件</button><label class="ai-help"><input type="checkbox" id="aiUseModel"> 使用 DeepSeek 智能匹配（需要先部署 Edge Function）</label><button class="primary ghost" id="aiExportFinance">导出费用单解析结果</button><button class="primary ghost" id="aiDownloadTemplate">下载 CSV 模板</button><button class="primary ghost" id="aiClear">清空预览</button></div>
-<div id="aiFileList" class="ai-filelist"></div><p class="ai-help">默认在浏览器解析结构化文件；勾选 AI 后将提取的文本发送到你的 Supabase Edge Function。请勿上传未经授权的敏感个人信息。扫描件需 OCR 服务，本版不自动识别图片文字。</p>
-<div id="aiStatus" class="note-box">尚未选择文件。正式导入前必须连接 Supabase；所有记录先在这里审核。</div>
-<div class="ai-bar"><span id="aiCount" class="ai-help">0 条待审核</span><button class="primary" id="aiCommit" disabled>确认导入审核通过的记录</button></div>
-<div class="tblwrap ai-scroll"><table class="ai-table"><thead><tr><th>选择</th><th>状态</th><th>来源</th><th>月份</th><th>职级</th><th>猎头供应商</th><th>年薪(万)</th><th>服务费(万)</th><th>空岗天数</th><th>保期流失</th><th>备注</th></tr></thead><tbody id="aiRows"><tr><td colspan="11">暂无解析结果</td></tr></tbody></table></div>
-<p class="ai-help">重复识别基于当前字段组合，仅能提示疑似重复；同月同供应商同薪酬的不同人选可能被误判。请逐条核对。导入时仅新增，不自动覆盖历史记录。</p>
-</div></div></div>
-
 <!-- ===== 数据源弹层 ===== -->
 <div class="overlay" id="ovCloud" aria-hidden="true">
   <div class="modal" role="dialog" aria-label="数据源设置">
@@ -444,8 +428,6 @@ tr:hover td:first-child{background:#F7FAF7}
     <div class="mbody">
       <div class="cfgrow"><span>Project URL</span><input id="cfgUrl" type="text" placeholder="https://xxxxxxxx.supabase.co"></div>
       <div class="cfgrow"><span>anon public key</span><input id="cfgKey" type="text" placeholder="eyJhbGciOi...（Project Settings → API）"></div>
-      <div class="cfgrow"><span>AI 安全登录邮箱</span><input id="aiLoginEmail" type="email" placeholder="用于 AI 功能的 Supabase 登录邮箱"></div>
-      <div class="mact"><button class="primary ghost" id="aiLogin">发送 AI 登录链接</button><button class="primary ghost" id="aiLogout">退出 AI 登录</button></div>
       <div class="mact">
         <button class="primary" id="btnConnect">测试并连接</button>
         <button class="primary ghost" id="btnSyncNow">立即同步</button>
@@ -1634,69 +1616,6 @@ function initEntryUI(){
   document.getElementById('btnSql').addEventListener('click',downloadSql);
 }
 
-
-/* ===== AI multi-format import extension ===== */
-const AI={files:[],rows:[],busy:false};
-const aiEl=id=>document.getElementById(id);
-const aiEsc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function aiStatus(t){aiEl('aiStatus').textContent=t;}
-function aiLoad(url,globalName){return new Promise((resolve,reject)=>{if(window[globalName])return resolve();const s=document.createElement('script');s.src=url;s.onload=resolve;s.onerror=()=>reject(Error('解析依赖加载失败，请检查网络：'+globalName));document.head.appendChild(s);});}
-function aiPick(files){AI.files=Array.from(files||[]);aiEl('aiFileList').textContent=AI.files.map(f=>f.name+' · '+Math.ceil(f.size/1024)+' KB').join('\n');aiStatus('已选择 '+AI.files.length+' 个文件，点击「解析文件」。');}
-function aiHeader(k){return String(k||'').toLowerCase().replace(/[\s_（）()\-：:]/g,'');}
-const AI_ALIASES={month:['入职月份','入职时间','入职日期','hiremonth','month','日期'],level:['职级','级别','level','岗位职级'],supplier:['猎头供应商','供应商','猎头公司','猎头名称','合作机构','supplier','vendor'],salary:['固定税前年薪','税前年薪','年薪','annualsalary','salary','薪酬'],fee:['猎头服务费','服务费','猎头费用','费用','fee','服务费用'],days:['空岗天数','空缺天数','到岗周期','vacancydays','days'],lost:['保期流失','是否流失','流失','lost'],note:['备注','岗位','岗位名称','note','说明']};
-function aiGet(o,k){const entries=Object.entries(o||{});const aliases=AI_ALIASES[k].map(aiHeader);const found=entries.find(([a])=>aliases.includes(aiHeader(a)));return found?found[1]:'';}
-function aiMonth(v){if(v instanceof Date)return v.toISOString().slice(0,7);if(typeof v==='number'&&v>30000&&v<90000){const d=new Date(Date.UTC(1899,11,30)+v*86400000);return d.toISOString().slice(0,7);}const s=String(v??'').trim();const m=s.match(/(20\d{2})[年\/.\-]?(0?[1-9]|1[0-2])/);return m?m[1]+'-'+m[2].padStart(2,'0'):'';}
-function aiNumber(v){if(typeof v==='number')return v;const s=String(v??'').replace(/[,，\s￥¥]/g,'');const n=parseFloat(s);if(!Number.isFinite(n))return NaN;return /元/.test(s)&&!/万/.test(s)?n/10000:n;}
-function aiLevel(v){const s=String(v??'').toUpperCase();if(/P4|P5|T4|T5/.test(s))return 'P4';if(/P6|P7|T6|T7/.test(s))return 'P6';if(/M2|M3/.test(s))return 'M2';if(/M4|M5|M6/.test(s))return 'M4';return LEVELS.some(x=>x.id===s)?s:'';}
-function aiLost(v){return /^(1|true|是|有|已流失|流失|yes)$/i.test(String(v??'').trim());}
-function aiNorm(o,source){const salary=aiNumber(aiGet(o,'salary')),fee=aiNumber(aiGet(o,'fee'));return {source,month:aiMonth(aiGet(o,'month')),level:aiLevel(aiGet(o,'level')),supplierName:String(aiGet(o,'supplier')??'').trim(),salary:Number.isFinite(salary)?salary:'',fee:Number.isFinite(fee)?fee:'',days:Number.isFinite(aiNumber(aiGet(o,'days')))?aiNumber(aiGet(o,'days')):0,lost:aiLost(aiGet(o,'lost')),note:String(aiGet(o,'note')??'').trim(),selected:true};}
-function aiFinance(o,source){
- const memo=String(o['摘要']||'');
- const dateMatch=memo.match(/(20\d{2})年(\d{1,2})月(\d{1,2})日(?:入职|到岗)/);
- const hireMonth=dateMatch?dateMatch[1]+'-'+dateMatch[2].padStart(2,'0'):'';
- const amount=Number(String(o['金额']||'').replace(/[,，￥¥\s]/g,''));
- const supplier=String(o['供应商名称']||'').trim();
- const stage=/尾款|第二笔|二期/.test(memo)?'尾款':/首款|第一笔|一期/.test(memo)?'首款':'未标明期次';
- const doc=String(o['单据编号']||'').trim();
- const nameMatch=memo.match(/[-—－]([^\s-—－，,。]{2,8})(?:-)?于20\d{2}年\d{1,2}月\d{1,2}日(?:入职|到岗)/);
- const person=nameMatch?nameMatch[1]:'';
- const note=['报账单号:'+doc,'费用期次:'+stage,'付款状态:'+String(o['付款状态']||''),'候选人线索:'+person,'原摘要:'+memo].join(' | ');
- return {source,month:hireMonth,level:'',supplierName:supplier,salary:'',fee:Number.isFinite(amount)?Math.round(amount*100/10000)/100:'',days:0,lost:false,note,selected:false,finance:true,stage,doc,person,payment:String(o['付款状态']||''),originalAmount:amount};
-}
-function aiAddObjects(arr,source){for(const x of arr){if(!x||typeof x!=='object'||Array.isArray(x))continue;
- const isFinance=('单据编号' in x)&&('金额' in x)&&('摘要' in x);
- AI.rows.push(isFinance?aiFinance(x,source):aiNorm(x,source));
-}}
-
-function aiDelimited(text,sep){const lines=[];let row=[],v='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(q&&text[i+1]==='"'){v+='"';i++;}else q=!q;}else if(c===sep&&!q){row.push(v);v='';}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(v);if(row.some(x=>x.trim()))lines.push(row);row=[];v='';}else v+=c;}row.push(v);if(row.some(x=>x.trim()))lines.push(row);const headers=(lines.shift()||[]).map((h,i)=>i===0?h.replace(/^\uFEFF/,''):h);return lines.map(a=>Object.fromEntries(headers.map((h,i)=>[h,a[i]??''])));}
-async function aiRead(file,depth=0){if(file.size>20*1024*1024)throw Error(file.name+' 超过单文件 20MB 限制');const name=file.name.toLowerCase();const buf=await file.arrayBuffer();if(name.endsWith('.zip')){if(depth>1)throw Error('ZIP 嵌套层级过深');await aiLoad('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js','JSZip');const z=await JSZip.loadAsync(buf);const entries=Object.values(z.files).filter(x=>!x.dir&&!x.name.startsWith('__MACOSX/')&&!x.name.includes('../'));if(entries.length>100)throw Error('ZIP 内文件超过 100 个');for(const e of entries){const b=await e.async('blob');await aiRead(new File([b],e.name),depth+1);}return;}
-if(/\.(xlsx|xls)$/.test(name)){await aiLoad('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','XLSX');const wb=XLSX.read(buf,{type:'array',cellDates:true});for(const sh of wb.SheetNames){const data=XLSX.utils.sheet_to_json(wb.Sheets[sh],{defval:''});aiAddObjects(data,file.name+' / '+sh);}return;}
-if(name.endsWith('.csv')||name.endsWith('.txt')){const txt=await file.text();if(name.endsWith('.txt')){if(aiEl('aiUseModel').checked){await aiCallModel(txt,file.name);return;}throw Error('TXT 非表格内容需要启用 AI 解析');}const first=txt.split(/\r?\n/)[0]||'';aiAddObjects(aiDelimited(txt,first.includes('\t')?'\t':first.includes(';')?';':','),file.name);return;}
-if(name.endsWith('.json')){const obj=JSON.parse(await file.text());aiAddObjects(Array.isArray(obj)?obj:Array.isArray(obj.records)?obj.records:[obj],file.name);return;}
-if(name.endsWith('.docx')){await aiLoad('https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js','mammoth');const out=await mammoth.extractRawText({arrayBuffer:buf});await aiCallModel(out.value,file.name);return;}
-if(name.endsWith('.pdf')){await aiLoad('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js','pdfjsLib');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';const doc=await pdfjsLib.getDocument({data:buf}).promise;let txt='';for(let i=1;i<=Math.min(doc.numPages,30);i++){const page=await doc.getPage(i);const content=await page.getTextContent();txt+=content.items.map(x=>x.str).join(' ')+'\n';}await aiCallModel(txt,file.name);return;}
-if(/\.(png|jpg|jpeg)$/.test(name))throw Error(file.name+' 为图片：当前版本尚未集成 OCR，请先转成可复制文字的 PDF 或 Excel');
-throw Error('不支持的格式：'+file.name);
-}
-async function aiCallModel(text,source){if(!aiEl('aiUseModel').checked)throw Error(source+' 需要勾选「使用 DeepSeek 智能匹配」');if(!CLOUD.connected||!CLOUD.client)throw Error('请先连接 Supabase');if(!text.trim())throw Error(source+' 未提取到文本（扫描件需要 OCR）');const {data,error}=await CLOUD.client.functions.invoke('hh-ai-import',{body:{text:text.slice(0,45000),filename:source}});if(error)throw Error('AI 解析失败：'+error.message);if(!data||!Array.isArray(data.records))throw Error('AI 未返回有效 records 数组');aiAddObjects(data.records,source);}
-function aiMatchSup(name){const n=String(name).replace(/^H\d+\s*/i,'').replace(/\s/g,'');return SUPPLIERS.find(s=>s.name.replace(/^H\d+\s*/i,'').replace(/\s/g,'')===n);}
-function aiKey(r,sup){return [r.month,r.level,sup||r.supplierName,Number(r.salary).toFixed(2),Number(r.fee).toFixed(2),Number(r.days).toFixed(1),r.lost].join('|');}
-function aiCheck(r,seen){if(r.finance)return '费用单待关联（不计入职）';const sup=aiMatchSup(r.supplierName);if(!MONTHS.some(m=>m.key===r.month))return '月份超范围';if(!LEVELS.some(l=>l.id===r.level))return '职级待确认';if(!sup||sup.dbId==null)return '供应商未匹配';if(!(Number(r.salary)>0)||!(Number(r.fee)>=0)||r.fee==='')return '金额待确认';if(!(Number(r.days)>=0))return '天数错误';const key=aiKey(r,sup.dbId);if(seen.has(key))return '疑似重复';seen.add(key);return '可导入';}
-function aiRender(){const seen=new Set(USER_RECS.map(u=>aiKey(u,(SUPPLIERS.find(s=>String(s.id)===String(u.supplier))||{}).dbId)));AI.rows.forEach(r=>r.status=aiCheck(r,seen));aiEl('aiCount').textContent=`共 ${AI.rows.length} 条 · 费用单 ${AI.rows.filter(r=>r.finance).length} 条 · 可导入 ${AI.rows.filter(r=>r.status==='可导入'&&r.selected).length} 条 · 待处理 ${AI.rows.filter(r=>r.status!=='可导入').length} 条`;aiEl('aiCommit').disabled=!CLOUD.connected||!AI.rows.some(r=>r.status==='可导入'&&r.selected)||AI.busy;aiEl('aiRows').innerHTML=AI.rows.length?AI.rows.map((r,i)=>`<tr><td><input type="checkbox" data-i="${i}" data-k="selected" ${r.selected?'checked':''}></td><td class="${r.status==='可导入'?'ai-good':'ai-err'}">${aiEsc(r.status)}</td><td title="${aiEsc(r.source)}">${aiEsc(r.source.slice(0,26))}</td>${['month','level','supplierName','salary','fee','days'].map(k=>`<td><input data-i="${i}" data-k="${k}" value="${aiEsc(r[k])}" class="${k==='supplierName'?'ai-wide':''}"></td>`).join('')}<td><input type="checkbox" data-i="${i}" data-k="lost" ${r.lost?'checked':''}></td><td><input data-i="${i}" data-k="note" class="ai-wide" value="${aiEsc(r.note)}"></td></tr>`).join(''):'<tr><td colspan="11">暂无解析结果</td></tr>';}
-async function aiParse(){if(AI.busy)return;if(!AI.files.length)return aiStatus('请先选择文件');AI.busy=true;AI.rows=[];aiEl('aiParse').disabled=true;const errors=[];for(const f of AI.files){aiStatus('正在解析 '+f.name+' ...');try{await aiRead(f);}catch(e){errors.push(e.message);}}AI.busy=false;aiEl('aiParse').disabled=false;aiRender();aiStatus(`解析完成：${AI.rows.length} 条。${errors.length?'\n未处理：'+errors.join('；'):''} 报账单已提取金额和入职日期，但缺少职级、年薪，且首尾款可能重复：默认不勾选、不计入入职。请核对后再导入。`);}
-async function aiCommit(){if(!CLOUD.connected)return aiStatus('请先连接 Supabase');aiRender();const rows=AI.rows.filter(r=>r.selected&&r.status==='可导入');if(!rows.length)return aiStatus('没有可导入记录');if(!confirm(`确认新增 ${rows.length} 条记录到 Supabase？不会覆盖旧记录。`))return;AI.busy=true;aiEl('aiCommit').disabled=true;let done=0;const errs=[];for(const r of rows){try{const sup=aiMatchSup(r.supplierName);await dbInsertHire({month:r.month,level:r.level,channel:'hunter',supplier:sup.id,salary:Number(r.salary),fee:Number(r.fee),days:Number(r.days),lost:r.lost,note:[r.note,'[批量导入:'+r.source+']'].filter(Boolean).join(' ')});r.selected=false;done++;}catch(e){errs.push(r.source+': '+e.message);}}AI.busy=false;try{await dbPull();render();renderRecList();renderSupList();}catch(e){errs.push('同步失败：'+e.message);}aiRender();aiStatus(`成功写入 ${done} 条，失败 ${errs.length} 条。${errs.join('；')}`);}
-function aiExportFinance(){
- const rows=AI.rows.filter(r=>r.finance);
- if(!rows.length)return aiStatus('请先解析猎头费用报账文件');
- const cols=['单据编号','来源文件','候选人线索','入职月份','供应商','费用期次','金额(元)','金额(万元)','付款状态','摘要','关联状态'];
- const data=rows.map(r=>[r.doc,r.source,r.person,r.month,r.supplierName,r.stage,r.originalAmount,r.fee,r.payment,r.note,'待关联/不可直接计入入职']);
- const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const csv='\uFEFF'+[cols,...data].map(a=>a.map(quote).join(',')).join('\r\n');
- const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='猎头费用解析结果_待核对.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
-}
-function aiInit(){aiEl('aiLogin').addEventListener('click',async()=>{if(!CLOUD.client)return cloudMsg('请先连接 Supabase','err');const email=aiEl('aiLoginEmail').value.trim();if(!email)return cloudMsg('请填写邮箱','err');const {error}=await CLOUD.client.auth.signInWithOtp({email,emailRedirectTo:location.href.split('#')[0]});cloudMsg(error?'发送失败：'+error.message:'登录链接已发送，请到邮箱点击链接',error?'err':'ok');});aiEl('aiLogout').addEventListener('click',async()=>{if(CLOUD.client)await CLOUD.client.auth.signOut();cloudMsg('AI 登录已退出','ok');});aiEl('btnAIImport').addEventListener('click',()=>{openOv('ovAI');aiRender();});aiEl('aiDrop').addEventListener('click',()=>aiEl('aiFiles').click());aiEl('aiFiles').addEventListener('change',e=>aiPick(e.target.files));aiEl('aiDrop').addEventListener('dragover',e=>e.preventDefault());aiEl('aiDrop').addEventListener('drop',e=>{e.preventDefault();aiPick(e.dataTransfer.files);});aiEl('aiParse').addEventListener('click',aiParse);aiEl('aiCommit').addEventListener('click',aiCommit);aiEl('aiClear').addEventListener('click',()=>{AI.rows=[];AI.files=[];aiEl('aiFiles').value='';aiEl('aiFileList').textContent='';aiRender();aiStatus('已清空预览（不会删除数据库记录）');});aiEl('aiRows').addEventListener('change',e=>{const t=e.target;if(!t.dataset.k)return;const r=AI.rows[+t.dataset.i];if(!r)return;r[t.dataset.k]=t.type==='checkbox'?t.checked:t.value;aiRender();});aiEl('aiExportFinance').addEventListener('click',aiExportFinance);aiEl('aiDownloadTemplate').addEventListener('click',()=>{const txt='入职月份,职级,猎头供应商,固定税前年薪,服务费,空岗天数,保期流失,备注\n2026-10,P6,示例猎头公司,68,13.6,45,否,示例（请删除）';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+txt],{type:'text/csv;charset=utf-8'}));a.download='猎头批量导入模板.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});}
-aiInit();
-
 /* ============ 21. 启动 ============ */
 loadLocal();
 buildControls();
@@ -1707,7 +1626,6 @@ updateStamp();
 initCharts();
 if(window.echarts){
   render();
-  autoConnect();
 }else{
   document.addEventListener('DOMContentLoaded',()=>{initCharts();render();autoConnect();});
   render();
@@ -1723,921 +1641,82 @@ async function autoConnect(){
 }
 
 </script>
-  
-<!-- DeepSeek 自动解析模块：开始 -->
+<!-- AI 智能导入中心：将本文件内容插入原 index.html 的 </body> 前 -->
 <style>
-#ds-open{
-  position:fixed;right:24px;bottom:24px;z-index:90;
-  background:#0E5A4E;color:white;border:0;
-  padding:14px 20px;cursor:pointer;font-size:14px;
-  box-shadow:0 5px 20px #0002;
-}
-#ds-panel{
-  display:none;position:fixed;inset:0;z-index:100;
-  background:#0008;overflow:auto;padding:25px;
-}
-#ds-content{
-  background:white;max-width:1100px;margin:auto;
-  padding:25px;border-radius:8px;color:#14201D;
-}
-#ds-content input,#ds-content button{
-  font:inherit;padding:9px;margin:5px;
-}
-#ds-content button{
-  cursor:pointer;border:1px solid #0E5A4E;
-  background:#0E5A4E;color:white;
-}
-#ds-content button:disabled{opacity:.5;cursor:wait}
-#ds-content .ds-light{background:white;color:#0E5A4E}
-#ds-result{overflow:auto;max-height:55vh;margin-top:15px}
-#ds-result table{
-  min-width:1000px;width:100%;border-collapse:collapse;
-}
-#ds-result th,#ds-result td{
-  border:1px solid #ddd;padding:8px;text-align:left;
-  white-space:normal;word-break:break-word;
-}
-#ds-status{padding:12px;background:#f1f5f2;margin-top:10px}
+#hh-ai-launch{font-size:12px;color:#fff;background:var(--teal);border:1px solid var(--teal);padding:6px 13px;cursor:pointer;white-space:nowrap}
+#hh-ai-launch:hover{background:#0a463c}
+#hh-ai-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(18,40,34,.48);padding:20px;overflow:auto}
+#hh-ai-overlay.show{display:flex;align-items:flex-start;justify-content:center}
+#hh-ai-modal{width:min(1120px,100%);background:var(--paper);border:1px solid var(--rule2);box-shadow:0 18px 50px rgba(14,58,46,.2);margin:18px auto;color:var(--ink)}
+#hh-ai-modal .ai-head{display:flex;justify-content:space-between;align-items:center;padding:17px 22px;border-bottom:1px solid var(--rule)}
+#hh-ai-modal .ai-head h2{font:700 18px var(--serif);margin:0}
+#hh-ai-modal .ai-body{padding:20px 22px}
+#hh-ai-modal .ai-drop{border:1px dashed var(--rule2);background:#fff;padding:25px;text-align:center;margin:12px 0}
+#hh-ai-modal input[type=file]{max-width:100%;margin:12px auto;display:block}
+#hh-ai-modal .ai-btn{border:1px solid var(--teal);background:var(--teal);color:#fff;padding:8px 15px;cursor:pointer;font:inherit}
+#hh-ai-modal .ai-btn.secondary{background:#fff;color:var(--teal)}
+#hh-ai-modal .ai-btn:disabled{opacity:.5;cursor:wait}
+#hh-ai-status{background:var(--teal-soft);padding:12px 14px;margin:14px 0;font-size:12px;white-space:pre-wrap}
+#hh-ai-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+#hh-ai-kpis>div{background:#fff;border:1px solid var(--rule);padding:12px}
+#hh-ai-kpis b{display:block;font-size:21px;color:var(--teal)}
+#hh-ai-kpis span{font-size:11px;color:var(--ink3)}
+#hh-ai-table-wrap{overflow:auto;max-height:440px;background:#fff;border:1px solid var(--rule)}
+#hh-ai-table{border-collapse:collapse;width:100%;min-width:1050px;font-size:12px}
+#hh-ai-table th,#hh-ai-table td{border-bottom:1px solid var(--rule);padding:8px;text-align:left;vertical-align:top;white-space:normal;word-break:break-word}
+#hh-ai-table th{background:#EDF1EC;position:sticky;top:0;z-index:1}
+#hh-ai-table td small{color:var(--ink3)}
+#hh-ai-history{margin-top:18px;font-size:12px;color:var(--ink2)}
+#hh-ai-history table{min-width:0;width:100%;table-layout:auto}
+#hh-ai-history td,#hh-ai-history th{text-align:left;padding:7px;border-bottom:1px solid var(--rule)}
+@media(max-width:650px){#hh-ai-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#hh-ai-modal .ai-body{padding:14px}}
 </style>
-
-<button id="ds-open">DeepSeek 自动解析</button>
-
-<div id="ds-panel">
-  <div id="ds-content">
-    <div style="display:flex;justify-content:space-between">
-      <h2>DeepSeek 智能文件解析</h2>
-      <button class="ds-light" id="ds-close">关闭</button>
-    </div>
-
-    <p>自动识别招聘及猎头费用文件，缺失信息允许留空。</p>
-
-    <div style="margin:15px 0">
-      <input id="ds-email" type="email"
-        placeholder="输入授权邮箱">
-      <button id="ds-login">发送登录邮件</button>
-      <button id="ds-logout" class="ds-light">退出登录</button>
-      <span id="ds-user"></span>
-    </div>
-
-    <hr>
-
-    <input id="ds-file" type="file" multiple
-      accept=".csv,.txt,.json,.xlsx,.xls,.docx,.pdf">
-
-    <button id="ds-parse">AI 自动解析</button>
-    <button id="ds-export" class="ds-light">
-      导出解析结果 CSV
-    </button>
-
-    <div id="ds-status">请先登录，再选择文件。</div>
-    <div id="ds-result"></div>
-
-    <p style="font-size:12px;color:#777;margin-top:15px">
-      当前版本仅解析和预览，不自动写入正式 ROI 数据表。
-      请勿上传未经授权发送给第三方 AI 的敏感信息。
-    </p>
+<div class="overlay" id="hh-ai-overlay" aria-hidden="true">
+ <div id="hh-ai-modal" role="dialog" aria-label="AI 智能数据导入中心">
+  <div class="ai-head"><div><h2>AI 智能数据导入中心</h2><div style="font-size:11px;color:var(--ink3);margin-top:4px">DeepSeek 自动识别 · 不完整数据也保留 · 历史批次可追溯</div></div><button class="mx" id="hh-ai-close">×</button></div>
+  <div class="ai-body">
+   <div class="ai-drop"><div style="font-weight:700">上传招聘、猎头费用或供应商文件</div><div style="font-size:11px;color:var(--ink3);margin-top:5px">Excel / CSV / Word / PDF / 图片 / JSON / ZIP，支持多文件混合上传</div><input id="hh-ai-files" type="file" multiple accept=".xlsx,.xls,.csv,.txt,.json,.docx,.pdf,.png,.jpg,.jpeg,.webp,.zip"><div style="font-size:11px;color:var(--ink3)">单文件建议不超过 20MB；ZIP 会自动展开解析</div></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="ai-btn" id="hh-ai-start">开始 AI 自动解析</button><button class="ai-btn secondary" id="hh-ai-export">导出解析结果 CSV</button><button class="ai-btn secondary" id="hh-ai-refresh">刷新历史批次</button></div>
+   <div id="hh-ai-status">请选择文件。系统会自动识别文件类型并调用 DeepSeek。</div>
+   <div id="hh-ai-kpis"><div><b id="hh-ai-files-n">0</b><span>处理文件</span></div><div><b id="hh-ai-records-n">0</b><span>识别记录</span></div><div><b id="hh-ai-pending-n">0</b><span>待补充记录</span></div><div><b id="hh-ai-failed-n">0</b><span>失败文件</span></div></div>
+   <div id="hh-ai-table-wrap"><table id="hh-ai-table"><thead><tr><th>来源文件</th><th>类型</th><th>单据编号</th><th>候选人</th><th>供应商</th><th>日期/月份</th><th>职级</th><th>年薪</th><th>金额</th><th>付款阶段/状态</th><th>缺失字段</th></tr></thead><tbody><tr><td colspan="11" style="text-align:center;color:#798581;padding:24px">尚无解析结果</td></tr></tbody></table></div>
+   <div id="hh-ai-history"><b>历史导入批次</b><div style="color:var(--ink3);margin-top:5px">连接 Supabase 后可查看已保存的批次记录。</div></div>
+   <div style="font-size:11px;color:var(--ink3);margin-top:12px;line-height:1.7">说明：AI 会尽可能保存信息不完整的记录。费用单不会自动计为入职人数；缺少 ROI 必要字段的记录进入待补充区，不会污染原有 ROI 统计。图片 OCR 和 ZIP 解包在浏览器本地完成，原始文件不会自动公开。</div>
   </div>
+ </div>
 </div>
-
 <script>
-(function(){
-"use strict";
-
-const $ = id => document.getElementById(id);
-const state = {results:[]};
-
-function status(s){$("ds-status").textContent=s}
-
-function escapeHtml(s){
-  return String(s??"").replace(/[&<>"']/g,c=>({
-    "&":"&amp;","<":"&lt;",">":"&gt;",
-    '"':"&quot;","'":"&#39;"
-  }[c]));
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);const results=[];let failures=0,processed=0;let batchId='';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const status=t=>$('hh-ai-status').textContent=t;
+function config(){const c=JSON.parse(localStorage.getItem('hhroi.cfg.v1')||'{}');if(!c.url||!c.key)throw Error('请先在原看板「数据源 / Supabase」中连接数据库');return c;}
+function addLauncher(){const wrap=document.querySelector('.stampwrap');if(wrap&&!$('hh-ai-launch')){const b=document.createElement('button');b.id='hh-ai-launch';b.textContent='AI 智能导入';wrap.insertBefore(b,wrap.firstChild);b.onclick=open;}}
+function open(){$('hh-ai-overlay').classList.add('show');$('hh-ai-overlay').setAttribute('aria-hidden','false');loadHistory().catch(()=>{});}
+function close(){$('hh-ai-overlay').classList.remove('show');$('hh-ai-overlay').setAttribute('aria-hidden','true');}
+$('hh-ai-close').onclick=close;$('hh-ai-overlay').addEventListener('click',e=>{if(e.target===$('hh-ai-overlay'))close();});
+function updateKpis(){const n=results.reduce((s,x)=>s+x.records.length,0);const p=results.reduce((s,x)=>s+x.records.filter(r=>(r.missing_fields||[]).length>0).length,0);$('hh-ai-files-n').textContent=processed;$('hh-ai-records-n').textContent=n;$('hh-ai-pending-n').textContent=p;$('hh-ai-failed-n').textContent=failures;}
+function render(){const tb=$('hh-ai-table').querySelector('tbody');const rows=[];results.forEach(f=>f.records.forEach(r=>{const date=[r.hire_date,r.hire_month,r.document_date,r.payment_date].filter(Boolean).join(' / ');rows.push(`<tr><td>${esc(f.filename)}</td><td>${esc(r.record_type)}</td><td>${esc(r.document_number)}</td><td>${esc(r.candidate)}</td><td>${esc(r.supplier)}</td><td>${esc(date)}</td><td>${esc(r.level)}</td><td>${esc(r.annual_salary)}</td><td>${esc(r.amount)} ${esc(r.amount_unit)}</td><td>${esc(r.payment_stage)} / ${esc(r.payment_status)}</td><td>${esc((r.missing_fields||[]).join('、'))}</td></tr>`);}));tb.innerHTML=rows.join('')||'<tr><td colspan="11" style="text-align:center;padding:24px">没有识别到记录；原始文件仍可重新解析。</td></tr>';updateKpis();}
+async function loadScript(src){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(Error('解析组件加载失败：'+src));document.head.appendChild(s);});}
+async function readText(file){const n=file.name.toLowerCase();if(file.size>20*1024*1024)throw Error('文件超过 20MB');
+ if(/\.zip$/.test(n)){if(!window.JSZip)await loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');const z=await JSZip.loadAsync(file);let out='';for(const [name,obj] of Object.entries(z.files)){if(obj.dir)continue;const ext=name.toLowerCase();if(/\.(csv|txt|json)$/.test(ext)){out+=`\n\n### ${name}\n`+await obj.async('string');}else if(/\.(xlsx|xls|docx|pdf|png|jpg|jpeg|webp)$/.test(ext)){const blob=await obj.async('blob');const f=new File([blob],name);out+=`\n\n### ${name}\n`+await readText(f);}}return out;}
+ if(/\.(xlsx|xls)$/.test(n)){if(!window.XLSX)await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});return wb.SheetNames.map(s=>'工作表：'+s+'\n'+XLSX.utils.sheet_to_csv(wb.Sheets[s])).join('\n\n');}
+ if(/\.docx$/.test(n)){if(!window.mammoth)await loadScript('https://cdn.jsdelivr.net/npm/mammoth@1.9.1/mammoth.browser.min.js');return (await mammoth.extractRawText({arrayBuffer:await file.arrayBuffer()})).value;}
+ if(/\.pdf$/.test(n)){if(!window.pdfjsLib){await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;let out='';for(let i=1;i<=pdf.numPages;i++){const p=await pdf.getPage(i);const t=await p.getTextContent();out+=`\n第${i}页\n`+t.items.map(x=>x.str).join(' ');}if(!out.trim())throw Error('PDF 无可提取文字，请尝试扫描件 OCR 或导出文字版');return out;}
+ if(/\.(png|jpg|jpeg|webp)$/.test(n)){if(!window.Tesseract)await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');const r=await Tesseract.recognize(file,'chi_sim+eng');return r.data.text;}
+ if(/\.(csv|txt|json)$/.test(n)){const b=await file.arrayBuffer();let t=new TextDecoder('utf-8').decode(b);if(t.includes('\uFFFD')){try{const g=new TextDecoder('gb18030').decode(b);if(!g.includes('\uFFFD'))t=g;}catch(e){}}return t;}
+ throw Error('不支持的文件格式：'+file.name);
 }
-
-function loadScript(src){
-  return new Promise((resolve,reject)=>{
-    const s=document.createElement("script");
-    s.src=src;
-    s.onload=resolve;
-    s.onerror=()=>reject(new Error("依赖库加载失败"));
-    document.head.appendChild(s);
-  });
-}
-
-let clientPromise=null;
-
-async function client(){
-  if(!clientPromise){
-    clientPromise=(async()=>{
-      if(!window.supabase){
-        await loadScript(
-          "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
-        );
-      }
-
-      const cfg=JSON.parse(
-        localStorage.getItem("hhroi.cfg.v1")||"{}"
-      );
-
-      if(!cfg.url||!cfg.key){
-        throw new Error(
-          "请先在原看板的「数据源 / Supabase」中连接数据库"
-        );
-      }
-
-      return window.supabase.createClient(
-        cfg.url,cfg.key,{
-          auth:{
-            storageKey:"hhroi-ai-auth",
-            persistSession:true,
-            autoRefreshToken:true,
-            detectSessionInUrl:true
-          }
-        }
-      );
-    })().catch(e=>{clientPromise=null;throw e});
-  }
-  return clientPromise;
-}
-
-async function updateUser(){
-  try{
-    const sb=await client();
-    const {data}=await sb.auth.getUser();
-    $("ds-user").textContent=data.user
-      ?"已登录："+data.user.email
-      :"尚未登录";
-  }catch(e){
-    $("ds-user").textContent=e.message;
-  }
-}
-
-$("ds-open").onclick=()=>{
-  $("ds-panel").style.display="block";
-  updateUser();
-};
-
-$("ds-close").onclick=()=>{
-  $("ds-panel").style.display="none";
-};
-
-$("ds-login").onclick=async()=>{
-  try{
-    const email=$("ds-email").value.trim();
-    if(!email)throw new Error("请输入邮箱");
-
-    const sb=await client();
-    const {error}=await sb.auth.signInWithOtp({
-      email,
-      options:{emailRedirectTo:location.origin+location.pathname}
-    });
-
-    if(error)throw error;
-    status("登录邮件已发送，请打开邮箱点击登录链接。");
-  }catch(e){status("登录失败："+e.message)}
-};
-
-$("ds-logout").onclick=async()=>{
-  try{
-    const sb=await client();
-    await sb.auth.signOut();
-    await updateUser();
-    status("已退出登录");
-  }catch(e){status(e.message)}
-};
-
-async function readFile(file){
-  const name=file.name.toLowerCase();
-
-  if(file.size>8*1024*1024){
-    throw new Error("文件超过8MB，请拆分");
-  }
-
-  if(name.endsWith(".xlsx")||name.endsWith(".xls")){
-    if(!window.XLSX){
-      await loadScript(
-        "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
-      );
-    }
-    const buf=await file.arrayBuffer();
-    const wb=XLSX.read(buf,{type:"array",cellDates:true});
-    return wb.SheetNames.map(sheet=>{
-      const csv=XLSX.utils.sheet_to_csv(wb.Sheets[sheet]);
-      return "工作表："+sheet+"\n"+csv;
-    }).join("\n\n");
-  }
-
-  if(name.endsWith(".docx")){
-    if(!window.mammoth){
-      await loadScript(
-        "https://cdn.jsdelivr.net/npm/mammoth@1.9.1/mammoth.browser.min.js"
-      );
-    }
-    const r=await mammoth.extractRawText({
-      arrayBuffer:await file.arrayBuffer()
-    });
-    return r.value;
-  }
-
-  if(name.endsWith(".pdf")){
-    if(!window.pdfjsLib){
-      await loadScript(
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-      );
-      pdfjsLib.GlobalWorkerOptions.workerSrc=
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    }
-    const pdf=await pdfjsLib.getDocument({
-      data:new Uint8Array(await file.arrayBuffer())
-    }).promise;
-
-    let output="";
-    for(let i=1;i<=pdf.numPages;i++){
-      const page=await pdf.getPage(i);
-      const t=await page.getTextContent();
-      output+="\n第"+i+"页\n"+
-        t.items.map(x=>x.str).join(" ");
-    }
-    if(!output.trim()){
-      throw new Error("扫描版PDF暂无OCR支持");
-    }
-    return output;
-  }
-
-  if(/\.(csv|txt|json)$/i.test(name)){
-    const buf=await file.arrayBuffer();
-    let text=new TextDecoder("utf-8").decode(buf);
-    if(text.includes("\uFFFD")){
-      try{
-        const gb=new TextDecoder("gb18030").decode(buf);
-        if(!gb.includes("\uFFFD"))text=gb;
-      }catch(e){}
-    }
-    return text;
-  }
-
-  throw new Error("暂不支持该文件格式："+file.name);
-}
-
-function render(){
-  const fields=[
-    ["record_type","类型"],
-    ["document_number","单据编号"],
-    ["candidate","候选人"],
-    ["supplier","猎头供应商"],
-    ["document_date","单据日期"],
-    ["hire_month","入职月份"],
-    ["level","职级"],
-    ["annual_salary","年薪"],
-    ["amount","金额"],
-    ["amount_unit","金额单位"],
-    ["payment_stage","款项期次"],
-    ["payment_status","付款状态"],
-    ["note","备注"]
-  ];
-
-  const head="<tr><th>来源文件</th>"+
-    fields.map(x=>"<th>"+x[1]+"</th>").join("")+"</tr>";
-
-  const rows=state.results.flatMap(f=>
-    f.records.map(r=>"<tr><td>"+escapeHtml(f.filename)+"</td>"+
-      fields.map(x=>"<td>"+escapeHtml(r[x[0]])+"</td>").join("")+
-      "</tr>")
-  ).join("");
-
-  $("ds-result").innerHTML=
-    "<table><thead>"+head+"</thead><tbody>"+
-    (rows||"<tr><td>没有提取到记录</td></tr>")+
-    "</tbody></table>";
-}
-
-$("ds-parse").onclick=async()=>{
-  const btn=$("ds-parse");
-  btn.disabled=true;
-  state.results=[];
-  $("ds-result").innerHTML="";
-
-  try{
-    const files=Array.from($("ds-file").files);
-    if(!files.length)throw new Error("请先选择文件");
-
-    const sb=await client();
-    const {data,error}=await sb.auth.getSession();
-    if(error)throw error;
-
-    const token=data.session?.access_token;
-    if(!token)throw new Error("请先完成邮箱登录");
-
-    const cfg=JSON.parse(
-      localStorage.getItem("hhroi.cfg.v1")||"{}"
-    );
-
-    for(let i=0;i<files.length;i++){
-      const file=files[i];
-      status("正在解析 "+(i+1)+"/"+files.length+
-        "："+file.name);
-
-      try{
-        const content=await readFile(file);
-
-        const res=await fetch(
-          cfg.url.replace(/\/$/,"")+
-          "/functions/v1/hh-ai-import",
-          {
-            method:"POST",
-            headers:{
-              "Content-Type":"application/json",
-              Authorization:"Bearer "+token,
-              apikey:cfg.key
-            },
-            body:JSON.stringify({
-              filename:file.name,
-              content
-            })
-          }
-        );
-
-        const json=await res.json();
-        if(!res.ok||!json.success){
-          throw new Error(json.error||"解析失败");
-        }
-
-        state.results.push(json);
-        render();
-      }catch(e){
-        state.results.push({
-          filename:file.name,
-          records:[],
-          error:e.message
-        });
-      }
-    }
-
-    const count=state.results.reduce(
-      (n,f)=>n+(f.records?.length||0),0
-    );
-    const errors=state.results.filter(f=>f.error);
-
-    status(
-      "解析结束：提取 "+count+" 条记录。"+
-      (errors.length
-        ?"失败文件："+errors.map(x=>x.filename+
-          "（"+x.error+"）").join("；")
-        :"全部文件已处理。")
-    );
-  }catch(e){
-    status("解析失败："+e.message);
-  }finally{
-    btn.disabled=false;
-  }
-};
-
-$("ds-export").onclick=()=>{
-  if(!state.results.length){
-    status("请先解析文件");
-    return;
-  }
-
-  const cols=[
-    "record_type","document_number","candidate",
-    "supplier","document_date","hire_month",
-    "level","annual_salary","amount","amount_unit",
-    "payment_stage","payment_status","note","raw"
-  ];
-
-  const quote=v=>'"'+String(v??"")
-    .replace(/"/g,'""')+'"';
-
-  const lines=[
-    ["filename",...cols].map(quote).join(",")
-  ];
-
-  state.results.forEach(f=>{
-    (f.records||[]).forEach(r=>{
-      lines.push(
-        [f.filename,...cols.map(c=>r[c])]
-          .map(quote).join(",")
-      );
-    });
-  });
-
-  const blob=new Blob(
-    ["\uFEFF"+lines.join("\r\n")],
-    {type:"text/csv;charset=utf-8"}
-  );
-
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="DeepSeek解析结果.csv";
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
-
+function chunks(text,max=26000){const lines=text.split(/\r?\n/);const out=[];let part='';for(const line of lines){if(part.length+line.length+1>max&&part){out.push(part);part='';}part+=line+'\n';}if(part.trim())out.push(part);return out.length?out:[text.slice(0,max)];}
+async function callAI(c,filename,content,chunkIndex){const res=await fetch(c.url.replace(/\/$/,'')+'/functions/v1/hh-ai-import',{method:'POST',headers:{'Content-Type':'application/json','apikey':c.key},body:JSON.stringify({filename,content,batch_id:batchId,chunk_index:chunkIndex})});const data=await res.json();if(!res.ok||!data.success)throw Error(data.error+(data.detail?'：'+data.detail:''));return data;}
+$('hh-ai-start').onclick=async()=>{const files=Array.from($('hh-ai-files').files);if(!files.length){status('请先选择文件');return;}const btn=$('hh-ai-start');btn.disabled=true;results.length=0;failures=0;processed=0;batchId=crypto.randomUUID();render();try{const c=config();for(const file of files){processed++;status(`正在读取：${file.name}`);try{const text=await readText(file);const parts=chunks(text);let collected=[];for(let i=0;i<parts.length;i++){status(`DeepSeek 正在解析：${file.name}\n第 ${i+1}/${parts.length} 批`);const data=await callAI(c,file.name,parts[i],i+1);collected=collected.concat(data.records||[]);}results.push({filename:file.name,records:collected});render();}catch(e){failures++;results.push({filename:file.name,records:[],error:e.message});render();}}status(`处理完成：${processed} 个文件，识别 ${results.reduce((s,x)=>s+x.records.length,0)} 条记录，失败 ${failures} 个文件。已识别记录已保存到 Supabase AI 导入库。`);await loadHistory();}catch(e){status('处理失败：'+e.message);}finally{btn.disabled=false;updateKpis();}};
+$('hh-ai-export').onclick=()=>{const cols=['source_file','record_type','document_number','candidate','supplier','document_date','payment_date','hire_date','hire_month','level','annual_salary','amount','amount_unit','payment_stage','payment_status','vacancy_days','lost','missing_fields','note','extra','raw_text'];const q=v=>{if(v&&typeof v==='object')v=JSON.stringify(v);return '"'+String(v??'').replace(/"/g,'""')+'"';};const lines=[cols.map(q).join(',')];results.forEach(f=>f.records.forEach(r=>lines.push([f.filename,...cols.slice(1).map(k=>r[k])].map(q).join(','))));const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='猎头AI解析结果.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);};
+async function loadHistory(){const c=config();const base=c.url.replace(/\/$/,'')+'/functions/v1/hh-ai-import';const r=await fetch(base,{method:'POST',headers:{'Content-Type':'application/json','apikey':c.key},body:JSON.stringify({action:'history'})});const out=await r.json();if(!r.ok||!out.success)throw Error(out.error||'历史批次读取失败');const data=out.batches||[];const el=$('hh-ai-history');el.innerHTML='<b>最近导入批次</b><table style="width:100%;border-collapse:collapse;margin-top:6px"><thead><tr><th>文件</th><th>类型</th><th>记录数</th><th>时间</th></tr></thead><tbody>'+data.map(x=>`<tr><td>${esc(x.source_file)}</td><td>${esc(x.document_type)}</td><td>${esc(x.record_count)}</td><td>${esc(new Date(x.created_at).toLocaleString())}</td></tr>`).join('')+'</tbody></table><div style="font-size:11px;color:var(--ink3);margin-top:7px">详细解析记录已保存在 Supabase 私有数据表中，不通过公开网页接口批量暴露。</div>'; }
+$('hh-ai-refresh').onclick=()=>loadHistory().then(()=>status('历史批次已刷新')).catch(e=>status(e.message));
+addLauncher();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addLauncher);else addLauncher();
 })();
 </script>
-<!-- DeepSeek 自动解析模块：结束 -->
-
-<!-- DeepSeek 自动解析功能开始 -->
-<style>
-#hhai-open {
-  position:fixed;
-  right:22px;
-  bottom:22px;
-  z-index:9998;
-  border:0;
-  border-radius:12px;
-  background:#0b6654;
-  color:white;
-  padding:15px 22px;
-  font-size:15px;
-  font-weight:600;
-  cursor:pointer;
-  box-shadow:0 6px 22px #0003;
-}
-#hhai-overlay {
-  display:none;
-  position:fixed;
-  inset:0;
-  z-index:9999;
-  background:#0009;
-  padding:20px;
-  overflow:auto;
-}
-#hhai-box {
-  max-width:1200px;
-  margin:15px auto;
-  background:#fff;
-  color:#1d2926;
-  border-radius:14px;
-  padding:24px;
-  box-sizing:border-box;
-  font-family:Arial,"Microsoft YaHei",sans-serif;
-}
-#hhai-box button {
-  padding:10px 16px;
-  margin:5px;
-  border:0;
-  border-radius:7px;
-  background:#0b6654;
-  color:#fff;
-  cursor:pointer;
-}
-#hhai-box button:disabled {
-  opacity:.5;
-  cursor:wait;
-}
-#hhai-box .secondary {
-  background:#edf3f1;
-  color:#0b6654;
-}
-#hhai-box input[type=file] {
-  display:block;
-  margin:16px 0;
-  max-width:100%;
-}
-#hhai-status {
-  padding:13px;
-  margin:14px 0;
-  border-radius:8px;
-  background:#edf3f1;
-  white-space:pre-wrap;
-}
-#hhai-results {
-  overflow:auto;
-  max-height:60vh;
-}
-#hhai-results table {
-  width:100%;
-  min-width:950px;
-  border-collapse:collapse;
-  font-size:13px;
-}
-#hhai-results th,
-#hhai-results td {
-  padding:9px;
-  border:1px solid #ddd;
-  text-align:left;
-  vertical-align:top;
-  word-break:break-word;
-}
-#hhai-results th {
-  background:#edf3f1;
-  position:sticky;
-  top:0;
-}
-#hhai-summary {
-  margin:12px 0;
-  line-height:1.8;
-}
-</style>
-
-<button id="hhai-open">
-  AI 自动解析文件
-</button>
-
-<div id="hhai-overlay">
-  <div id="hhai-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <h2 style="margin:0">DeepSeek 智能解析中心</h2>
-      <button id="hhai-close" class="secondary">
-        关闭
-      </button>
-    </div>
-
-    <p>
-      上传文件后自动使用 DeepSeek 识别。
-      不要求字段完整，不需要邮箱验证。
-    </p>
-
-    <input
-      id="hhai-files"
-      type="file"
-      multiple
-      accept=".csv,.xlsx,.xls,.json,.txt,.docx,.pdf"
-    >
-
-    <button id="hhai-run">
-      开始 AI 自动解析
-    </button>
-
-    <button id="hhai-export" class="secondary">
-      导出解析结果
-    </button>
-
-    <div id="hhai-status">
-      请选择文件，点击开始解析。
-    </div>
-
-    <div id="hhai-summary"></div>
-    <div id="hhai-results"></div>
-
-    <p style="font-size:12px;color:#777">
-      本功能仅解析、预览和导出，不自动修改原有 ROI 数据。
-      请勿上传未经授权发送给第三方 AI 的敏感资料。
-    </p>
-  </div>
-</div>
-
-<script>
-(function(){
-"use strict";
-
-const $=id=>document.getElementById(id);
-const allResults=[];
-
-function setStatus(text){
-  $("hhai-status").textContent=text;
-}
-
-function esc(value){
-  return String(value??"").replace(
-    /[&<>"']/g,
-    c=>({
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[c])
-  );
-}
-
-function script(src){
-  return new Promise((resolve,reject)=>{
-    const s=document.createElement("script");
-    s.src=src;
-    s.onload=resolve;
-    s.onerror=()=>reject(
-      new Error("无法加载文件解析组件")
-    );
-    document.head.appendChild(s);
-  });
-}
-
-$("hhai-open").onclick=()=>{
-  $("hhai-overlay").style.display="block";
-};
-
-$("hhai-close").onclick=()=>{
-  $("hhai-overlay").style.display="none";
-};
-
-async function readFile(file){
-  const name=file.name.toLowerCase();
-
-  if(file.size>8*1024*1024){
-    throw new Error("文件超过8MB，请拆分后上传");
-  }
-
-  if(name.endsWith(".xlsx")||name.endsWith(".xls")){
-    if(!window.XLSX){
-      await script(
-        "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
-      );
-    }
-
-    const workbook=XLSX.read(
-      await file.arrayBuffer(),
-      {type:"array",cellDates:true}
-    );
-
-    return workbook.SheetNames.map(sheet=>{
-      return "工作表："+sheet+"\n"+
-        XLSX.utils.sheet_to_csv(
-          workbook.Sheets[sheet]
-        );
-    }).join("\n\n");
-  }
-
-  if(name.endsWith(".docx")){
-    if(!window.mammoth){
-      await script(
-        "https://cdn.jsdelivr.net/npm/mammoth@1.9.1/mammoth.browser.min.js"
-      );
-    }
-
-    const result=await mammoth.extractRawText({
-      arrayBuffer:await file.arrayBuffer()
-    });
-
-    return result.value;
-  }
-
-  if(name.endsWith(".pdf")){
-    if(!window.pdfjsLib){
-      await script(
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-      );
-      pdfjsLib.GlobalWorkerOptions.workerSrc=
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    }
-
-    const pdf=await pdfjsLib.getDocument({
-      data:new Uint8Array(
-        await file.arrayBuffer()
-      )
-    }).promise;
-
-    let text="";
-
-    for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
-      const page=await pdf.getPage(pageNo);
-      const content=await page.getTextContent();
-
-      text+="\n第"+pageNo+"页\n"+
-        content.items.map(x=>x.str).join(" ");
-    }
-
-    if(!text.trim()){
-      throw new Error(
-        "扫描版 PDF 暂不支持，请使用文字版 PDF"
-      );
-    }
-
-    return text;
-  }
-
-  if(/\.(csv|txt|json)$/i.test(name)){
-    const buffer=await file.arrayBuffer();
-    let text=new TextDecoder("utf-8").decode(buffer);
-
-    if(text.includes("\uFFFD")){
-      try{
-        const gb=new TextDecoder("gb18030")
-          .decode(buffer);
-        if(!gb.includes("\uFFFD"))text=gb;
-      }catch(e){}
-    }
-
-    return text;
-  }
-
-  throw new Error("暂不支持此文件格式");
-}
-
-function getConfig(){
-  const config=JSON.parse(
-    localStorage.getItem("hhroi.cfg.v1")||"{}"
-  );
-
-  if(!config.url||!config.key){
-    throw new Error(
-      "请先在原看板连接 Supabase 数据源"
-    );
-  }
-
-  return config;
-}
-
-async function callAI(filename,content){
-  const config=getConfig();
-
-  const response=await fetch(
-    config.url.replace(/\/$/,"")+
-    "/functions/v1/hh-ai-import",
-    {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "apikey":config.key
-      },
-      body:JSON.stringify({
-        filename,
-        content
-      })
-    }
-  );
-
-  let data;
-
-  try{
-    data=await response.json();
-  }catch{
-    throw new Error("AI 接口未返回有效 JSON");
-  }
-
-  if(!response.ok||!data.success){
-    throw new Error(
-      data.error+
-      (data.detail?"："+data.detail:"")
-    );
-  }
-
-  return data;
-}
-
-const columns=[
-  ["record_type","记录类型"],
-  ["document_number","单据编号"],
-  ["candidate","候选人"],
-  ["supplier","猎头供应商"],
-  ["document_date","单据日期"],
-  ["hire_date","入职日期"],
-  ["hire_month","入职月份"],
-  ["level","职级"],
-  ["annual_salary","年薪"],
-  ["amount","金额"],
-  ["amount_unit","金额单位"],
-  ["payment_stage","首款/尾款"],
-  ["payment_status","付款状态"],
-  ["note","备注"]
-];
-
-function render(){
-  let summary="";
-  let rows="";
-
-  allResults.forEach(file=>{
-    summary+=
-      "<p><b>"+esc(file.filename)+"</b>："+ 
-      esc(file.document_type)+
-      "，识别 "+file.records.length+" 条。"+
-      esc(file.summary)+"</p>";
-
-    file.records.forEach(record=>{
-      rows+="<tr><td>"+
-        esc(file.filename)+"</td>";
-
-      columns.forEach(([key])=>{
-        rows+="<td>"+esc(record[key])+"</td>";
-      });
-
-      rows+="<td>"+
-        esc(JSON.stringify(record.extra||{}))+
-        "</td></tr>";
-    });
-  });
-
-  $("hhai-summary").innerHTML=summary;
-
-  $("hhai-results").innerHTML=
-    "<table><thead><tr>"+
-    "<th>来源文件</th>"+
-    columns.map(x=>"<th>"+x[1]+"</th>").join("")+
-    "<th>其他信息</th>"+
-    "</tr></thead><tbody>"+
-    (rows||"<tr><td>暂无记录</td></tr>")+
-    "</tbody></table>";
-}
-
-$("hhai-run").onclick=async()=>{
-  const button=$("hhai-run");
-  const files=Array.from($("hhai-files").files);
-
-  if(!files.length){
-    setStatus("请先选择文件");
-    return;
-  }
-
-  button.disabled=true;
-  allResults.length=0;
-  $("hhai-results").innerHTML="";
-  $("hhai-summary").innerHTML="";
-
-  const failures=[];
-
-  try{
-    for(let i=0;i<files.length;i++){
-      const file=files[i];
-
-      setStatus(
-        "正在解析 "+(i+1)+"/"+files.length+
-        "\n"+file.name
-      );
-
-      try{
-        const content=await readFile(file);
-
-        const result=await callAI(
-          file.name,
-          content
-        );
-
-        allResults.push(result);
-        render();
-      }catch(error){
-        failures.push(
-          file.name+"："+error.message
-        );
-      }
-    }
-
-    const count=allResults.reduce(
-      (sum,file)=>sum+file.records.length,
-      0
-    );
-
-    setStatus(
-      "解析完成！\n"+
-      "成功文件："+allResults.length+"\n"+
-      "提取记录："+count+" 条"+
-      (failures.length
-        ?"\n失败信息：\n"+failures.join("\n")
-        :"")
-    );
-  }finally{
-    button.disabled=false;
-  }
-};
-
-$("hhai-export").onclick=()=>{
-  if(!allResults.length){
-    setStatus("请先解析文件");
-    return;
-  }
-
-  const keys=[
-    "filename",
-    ...columns.map(x=>x[0]),
-    "extra",
-    "raw"
-  ];
-
-  const quote=value=>{
-    const str=typeof value==="object"&&value!==null
-      ?JSON.stringify(value)
-      :String(value??"");
-
-    return '"'+str.replace(/"/g,'""')+'"';
-  };
-
-  const lines=[
-    keys.map(quote).join(",")
-  ];
-
-  allResults.forEach(file=>{
-    file.records.forEach(record=>{
-      const row={
-        filename:file.filename,
-        ...record
-      };
-
-      lines.push(
-        keys.map(k=>quote(row[k])).join(",")
-      );
-    });
-  });
-
-  const blob=new Blob(
-    ["\uFEFF"+lines.join("\r\n")],
-    {type:"text/csv;charset=utf-8"}
-  );
-
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement("a");
-
-  link.href=url;
-  link.download="猎头AI自动解析结果.csv";
-  link.click();
-
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-};
-
-})();
-</script>
-<!-- DeepSeek 自动解析功能结束 -->
 
 </body>
 </html>
